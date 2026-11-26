@@ -1,0 +1,175 @@
+# Builds an unsigned device IPA from the fork's committed mobile bundle.
+# Manual runs leave an Actions artifact; sidestore-v* tags also publish a GitHub Release
+# containing the IPA, its icon, and an AltStore/SideStore source JSON.
+# This uses only the repository's committed exercise media and requires no signing secrets.
+name: Build SideStore IPA
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "sidestore-v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sidestore-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Check release tag version
+        id: version
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          if [[ "$GITHUB_REF" == refs/tags/sidestore-v* ]]; then
+            tag_version="${GITHUB_REF_NAME#sidestore-v}"
+            if [[ "$tag_version" != "$version" ]]; then
+              echo "Tag version $tag_version does not match frontend/package.json ($version)." >&2
+              exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building openGym $version"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build the mobile web app
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if npm run build:mobile; then
+              exit 0
+            fi
+            if [[ "$attempt" == 3 ]]; then
+              exit 1
+            fi
+            echo "::warning::mobile build failed; retrying after the CocoaPods/network step (attempt $attempt)"
+            sleep 30
+          done
+
+      - name: Add the asset downloader extension
+        working-directory: frontend
+        run: ruby ios/ci/add-asset-downloader.rb
+
+      - name: Add the Apple Watch app
+        working-directory: frontend
+        run: ruby ios/ci/add-watch-app.rb
+
+      - name: Add widgets and Live Activity
+        working-directory: frontend
+        run: ruby ios/ci/add-widgets.rb
+
+      - name: Add Garmin support
+        working-directory: frontend
+        run: ruby ios/ci/add-garmin.rb
+
+      - name: Archive the iOS app without signing
+        working-directory: frontend/ios/App
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" MARKETING_VERSION="$APP_VERSION" \
+            archive | tee build/archive.log
+
+          app="build/App.xcarchive/Products/Applications/App.app"
+          test -d "$app"
+          test -f "$app/Info.plist"
+          test -f "$app/public/index.html"
+          grep -q 'name="opengym-flavor" content="mobile"' "$app/public/index.html"
+          test -d "$app/public/exercise-media"
+          test ! -d "$app/_CodeSignature"
+
+          actual_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")"
+          actual_build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Info.plist")"
+          if [[ "$actual_version" != "$APP_VERSION" || "$actual_build" != "$GITHUB_RUN_NUMBER" ]]; then
+            echo "Archived app version/build is $actual_version ($actual_build), expected $APP_VERSION ($GITHUB_RUN_NUMBER)." >&2
+            exit 1
+          fi
+
+          rm -rf build/sideStore-ipa
+          mkdir -p build/sideStore-ipa/Payload
+          cp -R "$app" build/sideStore-ipa/Payload/App.app
+          (cd build/sideStore-ipa && zip -qry "../openGym-$APP_VERSION.ipa" Payload)
+          ls -lh "build/openGym-$APP_VERSION.ipa"
+
+      - name: Upload the unsigned IPA
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: openGym-unsigned-ipa
+          path: frontend/ios/App/build/openGym-${{ steps.version.outputs.version }}.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Publish the SideStore release
+        if: startsWith(github.ref, 'refs/tags/sidestore-v')
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          release="frontend/ios/App/build/release"
+          mkdir -p "$release"
+          ipa="openGym-$APP_VERSION.ipa"
+          cp "frontend/ios/App/build/$ipa" "$release/$ipa"
+          cp frontend/public/icon-512.png "$release/openGym-icon.png"
+
+          base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          source_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/latest/download/sidestore-source.json"
+          python3 scripts/ios/make-sidestore-source.py \
+            --ipa "$release/$ipa" \
+            --repository "$GITHUB_REPOSITORY" \
+            --download-url "$base/$ipa" \
+            --icon-url "$base/openGym-icon.png" \
+            --source-url "$source_url" \
+            --output "$release/sidestore-source.json"
+
+          cat > "$release/notes.md" <<EOF
+          Unofficial, unsigned openGym IPA for SideStore. SideStore signs the app with your Apple ID.
+
+          Add this source in SideStore → Sources:
+          $source_url
+
+          The IPA uses the original openGym iOS bundle identifier. It cannot be installed alongside another build with that identifier.
+          EOF
+
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "openGym $APP_VERSION for SideStore" --notes-file "$release/notes.md" \
+            "$release/$ipa" "$release/openGym-icon.png" "$release/sidestore-source.json"
+
+          {
+            echo "### SideStore source"
+            echo
+            echo "$source_url"
+          } >> "$GITHUB_STEP_SUMMARY"
