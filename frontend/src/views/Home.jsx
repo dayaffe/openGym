@@ -10,6 +10,8 @@ import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, DAYS, DAY
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import { startOrPreview, startPickerSheet } from '../components/StartSheets.jsx'
+import { boulderingSessionSheet } from '../components/BoulderingSession.jsx'
+import { activeBouldering } from '../lib/activities.js'
 import { daySessionsStatus } from '../lib/day-sessions.js'
 import { deriveSessionName } from '../lib/session-merge.js'
 import LineChart from '../components/LineChart.jsx'
@@ -212,11 +214,14 @@ export default function Home() {
           and your other routines) is only reachable on a day with nothing planned. The one other
           way in, "Choose a different workout" on the weigh-in sheet, does not exist when the
           weigh-in is switched off. This is that door, and it starts nothing on its own. */}
-      {!S.active && <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
-        <Button size="sm" variant="ghost" className="dim" icon="swap" onClick={startPickerSheet}>
+      <div className="home-session-actions">
+        {!S.active && <Button size="sm" variant="ghost" className="dim" icon="swap" onClick={startPickerSheet}>
           {t('Choose a different workout')}
+        </Button>}
+        <Button size="sm" variant="ghost" icon="pullup" onClick={() => boulderingSessionSheet()}>
+          {activeBouldering(S) ? t('Resume bouldering') : t('Start bouldering')}
         </Button>
-      </div>}
+      </div>
       <SeasonDeco spot="home-hero" />
     </div>
 

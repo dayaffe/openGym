@@ -34,7 +34,20 @@ export function readBouldering(value) {
       circuits.push({ grade, attempts, sends })
     }
   }
-  return { gym, circuits }
+  return { gym, circuits, ...(value.live === true ? { live: true } : {}) }
+}
+
+// Update one tally without mutating the rest of the session.
+export function logBoulder(circuits, grade, send, direction = 1) {
+  const label = grade.trim().slice(0, MAX_GRADE_LENGTH)
+  if (!label) return circuits
+  const index = circuits.findIndex(row => row.grade.toLowerCase() === label.toLowerCase())
+  const row = circuits[index] || { grade: label, attempts: 0, sends: 0 }
+  if (direction > 0 && (row.attempts >= MAX_CIRCUIT_COUNT || (index < 0 && circuits.length >= MAX_CIRCUITS))) return circuits
+  if (direction < 0 && (send ? !row.sends : row.attempts <= row.sends)) return circuits
+  const next = { ...row, attempts: row.attempts + direction, sends: row.sends + (send ? direction : 0) }
+  if (index < 0) return [...circuits, next]
+  return next.attempts ? circuits.map((r, i) => i === index ? next : r) : circuits.filter((_, i) => i !== index)
 }
 
 export function boulderingTotals(circuits) {

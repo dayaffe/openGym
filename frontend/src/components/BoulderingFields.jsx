@@ -5,9 +5,30 @@ import {
 } from '../lib/bouldering.js'
 import { Button, Stepper } from './ui.jsx'
 
+export function BoulderingGymField({ gym, onChange }) {
+  const [otherGym, setOtherGym] = useState(!!gym && !VITAL_GYMS.includes(gym))
+  return <>
+    <label className="boulder-field">
+      <span>{t('Climbing gym')}</span>
+      <select className="input" value={otherGym ? 'other' : gym} onChange={e => {
+        const next = e.target.value
+        setOtherGym(next === 'other')
+        onChange(next === 'other' ? '' : next)
+      }}>
+        <option value="">{t('Select a gym (optional)')}</option>
+        {VITAL_GYMS.map(name => <option key={name} value={name}>{name}</option>)}
+        <option value="other">{t('Other gym')}</option>
+      </select>
+    </label>
+    {otherGym && <label className="boulder-field">
+      <span>{t('Gym name')}</span>
+      <input className="input" value={gym} maxLength={80} onChange={e => onChange(e.target.value)} />
+    </label>}
+  </>
+}
+
 export default function BoulderingFields({ value, onChange, onFocus }) {
   const { gym, circuits } = value
-  const [otherGym, setOtherGym] = useState(!!gym && !VITAL_GYMS.includes(gym))
   const [grade, setGrade] = useState(circuits[0]?.grade || 'Green')
   const [custom, setCustom] = useState('')
   const known = Object.keys(CIRCUIT_COLORS)
@@ -34,22 +55,7 @@ export default function BoulderingFields({ value, onChange, onFocus }) {
   }
 
   return <div className="boulder-fields kb-lift" onFocus={onFocus}>
-    <label className="boulder-field">
-      <span>{t('Climbing gym')}</span>
-      <select className="input" value={otherGym ? 'other' : gym} onChange={e => {
-        const next = e.target.value
-        setOtherGym(next === 'other')
-        onChange({ gym: next === 'other' ? '' : next, circuits })
-      }}>
-        <option value="">{t('Select a gym (optional)')}</option>
-        {VITAL_GYMS.map(name => <option key={name} value={name}>{name}</option>)}
-        <option value="other">{t('Other gym')}</option>
-      </select>
-    </label>
-    {otherGym && <label className="boulder-field">
-      <span>{t('Gym name')}</span>
-      <input className="input" value={gym} maxLength={80} onChange={e => onChange({ gym: e.target.value, circuits })} />
-    </label>}
+    <BoulderingGymField gym={gym} onChange={gym => onChange({ gym, circuits })} />
     <fieldset>
       <legend>{t('Circuit color or grade')}</legend>
       <div className="boulder-grades">

@@ -79,6 +79,7 @@ export function readActivity(entry) {
   const title = typeof entry.title === 'string' ? entry.title.trim().slice(0, TITLE_MAX) : ''
   const note = typeof entry.note === 'string' ? entry.note.trim().slice(0, NOTE_MAX) : ''
   const bouldering = sport === 'climb' ? readBouldering(entry.bouldering) : null
+  if (bouldering?.live && (!Number.isFinite(at) || at <= 0)) delete bouldering.live
   return {
     d: entry.d, sport, min: Math.min(ACTIVITY_MIN_MAX, min),
     ...(km > 0 && km < 1000 ? { km: roundKm(km) } : {}),
@@ -103,6 +104,11 @@ export function activitiesOf(S) {
 
 /** The activities on `iso`. */
 export const activitiesOn = (S, iso) => activitiesOf(S).filter(a => a.d === iso)
+
+/** Latest started bouldering session that has not been finished. */
+export function activeBouldering(S) {
+  return activitiesOf(S).find(a => a.bouldering?.live)
+}
 
 /** The days that hold one, as a Set of ISO dates. */
 export const activityDays = S => new Set(activitiesOf(S).map(a => a.d))

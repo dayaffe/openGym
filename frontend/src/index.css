@@ -4757,3 +4757,11 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .boulder-custom .input{flex:1;min-width:9rem}
 .boulder-counts > div{display:grid;gap:4px}
 .boulder-counts .stp button,.boulder-custom .btn{min-width:44px;min-height:44px}
+.home-session-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:4px}
+.home-session-actions .btn{min-height:44px}
+.boulder-elapsed{font-variant-numeric:tabular-nums}
+.boulder-live-grades{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));gap:8px}
+.boulder-live-grades .boulder-live-grade{display:flex;justify-content:flex-start;gap:8px;min-height:48px;padding:8px 10px;overflow-wrap:anywhere;text-align:start}
+.boulder-live-grade .boulder-elapsed{margin-inline-start:auto}
+.boulder-live-summary{flex-wrap:wrap;gap:8px}
+.boulder-live-summary .btn{min-height:44px}

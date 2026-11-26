@@ -16,6 +16,8 @@ import { glyphOf } from '../lib/glyphs.js'
 import { leftoversBefore } from '../lib/leftovers.js'
 import { Button, Row } from './ui.jsx'
 import MiniBodyMap from './MiniBodyMap.jsx'
+import { boulderingSessionSheet } from './BoulderingSession.jsx'
+import { activeBouldering } from '../lib/activities.js'
 
 const ui = () => useUI.getState()
 const S = () => useStore.getState().S
@@ -72,6 +74,10 @@ function StartPicker({ close }) {
     <h3 style={{ marginBottom: 2 }}>{t('What are we training?')}</h3>
     <div className="muted small" style={{ marginBottom: 12 }}>
       {sessions.length ? t('Today is {0}. Or pick anything else.', sessions.map(nameOf).join(', ')) : t('Rest day, but no one’s stopping you.')}
+    </div>
+    <div className="list menu-list" style={{ marginBottom: 14 }}>
+      <Row icon="pullup" title={activeBouldering(st) ? t('Resume bouldering') : t('Start bouldering')}
+        accessory="chevron" onClick={() => { close(); boulderingSessionSheet() }} />
     </div>
     {left && <div className="list menu-list" style={{ marginBottom: 14 }}>
       <Row icon="history" iconTint="var(--orange)" title={tn('Start with the {0} exercise you didn’t get to', 'Start with the {0} exercises you didn’t get to', left.ex.length)}
