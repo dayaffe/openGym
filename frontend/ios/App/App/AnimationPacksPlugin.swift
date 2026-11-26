@@ -44,7 +44,7 @@ public class AnimationPacksPlugin: CAPPlugin, CAPBridgedPlugin {
     /// One file of a downloaded pack, its bytes memory-mapped (the Apple Watch's clips,
     /// WatchBridgePlugin), or nil: not downloaded, no such drawing, or before iOS 26.
     static func packData(_ id: String, _ drawing: String) -> Data? {
-        guard matches(packPattern, id), drawing.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil else { return nil }
+        guard supported, matches(packPattern, id), drawing.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil else { return nil }
         #if canImport(BackgroundAssets)
         if #available(iOS 26.0, *) {
             return try? AssetPackManager.shared.contents(at: FilePath("\(id)/\(drawing).webp"), searchingInAssetPackWithID: id, options: .mappedIfSafe)
@@ -251,6 +251,7 @@ public class AnimationPacksPlugin: CAPPlugin, CAPBridgedPlugin {
     /// Whether the pack's probe file can be read through Background Assets: the test that the
     /// pack is really there for the scheme handler, not only listed as downloaded.
     static func readable(_ id: String, _ probe: String) -> Bool {
+        guard supported else { return false }
         #if canImport(BackgroundAssets)
         if #available(iOS 26.0, *) {
             guard let fd = try? AssetPackManager.shared.descriptor(for: FilePath("\(id)/\(probe).webp"), searchingInAssetPackWithID: id) else { return false }
@@ -354,12 +355,7 @@ final class AnimationPackSchemeHandler: NSObject, WKURLSchemeHandler {
         guard url.pathComponents.count == 2, AnimationPacksPlugin.matches(AnimationPackSchemeHandler.filePattern, file) else { return fail(task, 404) }
         let key = ObjectIdentifier(task)
         queue.async {
-            var data: Data?
-            #if canImport(BackgroundAssets)
-            if #available(iOS 26.0, *) {
-                data = try? AssetPackManager.shared.contents(at: FilePath("\(id)/\(file)"), searchingInAssetPackWithID: id, options: .mappedIfSafe)
-            }
-            #endif
+            let data = AnimationPacksPlugin.packData(id, String(file.dropLast(".webp".count)))
             DispatchQueue.main.async {
                 guard self.take(key) else { return }
                 guard let data = data else { return self.fail(task, 404) }

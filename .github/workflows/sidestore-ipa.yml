@@ -74,9 +74,12 @@ jobs:
             sleep 30
           done
 
-      - name: Add the asset downloader extension
-        working-directory: frontend
-        run: ruby ios/ci/add-asset-downloader.rb
+      - name: Disable Apple hosted asset packs for sideloading
+        working-directory: frontend/ios/App
+        run: |
+          for key in BAAppGroupID BAHasManagedAssetPacks BAUsesAppleHosting; do
+            /usr/libexec/PlistBuddy -c "Delete :$key" App/Info.plist
+          done
 
       - name: Add the Apple Watch app
         working-directory: frontend
@@ -110,6 +113,13 @@ jobs:
           grep -q 'name="opengym-flavor" content="mobile"' "$app/public/index.html"
           test -d "$app/public/exercise-media"
           test ! -d "$app/_CodeSignature"
+          test ! -d "$app/Extensions/AnimationPacksDownloader.appex"
+          for key in BAAppGroupID BAHasManagedAssetPacks BAUsesAppleHosting; do
+            if /usr/libexec/PlistBuddy -c "Print :$key" "$app/Info.plist" >/dev/null 2>&1; then
+              echo "Unexpected Background Assets key in sideload archive: $key" >&2
+              exit 1
+            fi
+          done
 
           actual_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")"
           actual_build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Info.plist")"
@@ -159,6 +169,9 @@ jobs:
 
           cat > "$release/notes.md" <<EOF
           Unofficial, unsigned openGym IPA for SideStore. SideStore signs the app with your Apple ID.
+
+          This build uses the included exercise animations. Apple hosted animation packs are
+          disabled to address a launch crash reported in LiveContainer.
 
           Add this source in SideStore → Sources:
           $source_url
