@@ -4713,16 +4713,22 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 :root[data-vbar]{--vbar-free:calc(100vw - var(--sal) - var(--sar))}
 :root[data-vbar] body{padding-left:var(--sal);padding-right:var(--sar)}
 :root[data-vbar] #tabbar{
-  top:0;bottom:0;flex-direction:column;justify-content:flex-start;align-items:center;gap:clamp(0px,2dvh - 5px,14px);
-  padding:calc(var(--vbar-top) + 8px) 0 calc(8px + var(--sab));
-  border:0;border-radius:0;transform:none;box-shadow:none;overflow-y:auto;
+  top:0;bottom:0;flex-direction:column;justify-content:safe flex-end;align-items:center;gap:4px;
+  padding:calc(var(--vbar-top) + 8px) 3px calc(8px + var(--sab));
+  border:0;border-radius:0;transform:none;box-shadow:none;overflow:auto;
+  reading-flow:flex-visual;
 }
 :root[data-vbar="right"] #tabbar{left:auto;right:0;width:var(--sar);border-left:var(--hair) solid var(--sep-op)}
 :root[data-vbar="left"] #tabbar{left:0;right:auto;width:var(--sal);border-right:var(--hair) solid var(--sep-op)}
-:root[data-vbar] #tabbar button{flex:none;width:min(52px,100%);min-height:44px;padding:8px 0;border-radius:var(--r)}
-:root[data-vbar] #tabbar button.on:not(.start){background:var(--acc-soft)}
-:root[data-vbar] #tabbar button:not(.start) > span:last-child{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-:root[data-vbar] #tabbar button.start{order:1;margin: auto 0 0;padding:0}
+:root[data-vbar] #tabbar button{flex:none;width:min(56px,100%);min-height:44px;justify-content:center;padding:6px 0;border-radius:999px}
+:root[data-vbar] #tabbar button.on:not(.start){background:var(--acc-soft);box-shadow:inset 0 0 0 var(--hair) var(--sep-op)}
+:root[data-vbar] #tabbar button:focus-visible{outline:2px solid var(--acc-ink);outline-offset:-2px}
+:root[data-vbar] #tabbar button:not(.start) > span:last-child{
+  position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap
+}
+:root[data-vbar] #tabbar button.start{order:1;margin:4px 0 0;padding:0}
+:root[data-vbar] #tabbar button.start .cir{width:44px;height:44px}
+:root[data-vbar] #tabbar .tab-time{max-width:100%;overflow-wrap:anywhere}
 :root[data-vbar] :is(.conn-bar,#timer,.composer,.sheet,#app > .page.under){left:var(--sal);right:var(--sar)}
 :root[data-vbar] :is(#toast,.center){left:calc(50% + (var(--sal) - var(--sar)) / 2)}
 /* Override the floating desktop offsets when the inner display reaches the wide breakpoint. */
@@ -4736,3 +4742,16 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 :root[data-vbar] body.totop-on.resting #app{padding-bottom:calc(160px + var(--sab))}
 :root[data-vbar] .cp-screen{padding-left:calc(16px + var(--sal));padding-right:calc(16px + var(--sar))}
 :root[data-vbar] .wrapped{padding-left:var(--sal);padding-right:var(--sar)}
+
+/* Bouldering tallies in the activity sheet. Keep the grade name beside its swatch. */
+.boulder-fields{display:grid;gap:12px;margin:12px 0;padding:12px;background:var(--surface);border-radius:var(--r)}
+.boulder-fields fieldset{border:0;padding:0;margin:0;min-inline-size:0}
+.boulder-fields legend{padding:0;margin-bottom:8px}
+.boulder-field{display:grid;gap:6px}
+.boulder-grades,.boulder-counts,.boulder-custom{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.boulder-grades .chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;white-space:normal;text-align:start}
+.boulder-swatch{inline-size:12px;block-size:12px;flex:none;border:1px solid var(--sep-op);border-radius:50%}
+.boulder-custom{margin-top:8px}
+.boulder-custom .input{flex:1;min-width:9rem}
+.boulder-counts > div{display:grid;gap:4px}
+.boulder-counts .stp button,.boulder-custom .btn{min-width:44px;min-height:44px}

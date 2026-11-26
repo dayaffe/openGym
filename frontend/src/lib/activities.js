@@ -24,6 +24,7 @@
 // never makes a second one, and a removed one is never brought back (the stamp stays).
 import { NOTE_MAX } from './history.js'
 import { hashId } from './weigh-ins.js'
+import { readBouldering } from './bouldering.js'
 
 export const SPORTS = ['run', 'ride', 'swim', 'hike', 'row', 'ski', 'football', 'racket', 'ball', 'climb', 'fight', 'yoga', 'dance', 'other']
 export const SPORT_LABEL = {
@@ -77,12 +78,14 @@ export function readActivity(entry) {
   const at = Number(entry.at)
   const title = typeof entry.title === 'string' ? entry.title.trim().slice(0, TITLE_MAX) : ''
   const note = typeof entry.note === 'string' ? entry.note.trim().slice(0, NOTE_MAX) : ''
+  const bouldering = sport === 'climb' ? readBouldering(entry.bouldering) : null
   return {
     d: entry.d, sport, min: Math.min(ACTIVITY_MIN_MAX, min),
     ...(km > 0 && km < 1000 ? { km: roundKm(km) } : {}),
     ...(at > 0 ? { at } : {}),
     ...(title ? { title } : {}),
     ...(note ? { note } : {}),
+    ...(bouldering ? { bouldering } : {}),
     src: SOURCES.includes(entry.src) ? entry.src : 'manual',
   }
 }
@@ -117,7 +120,10 @@ export function withActivity(map, id, activity, now = Date.now()) {
 }
 
 /** What a row calls it: its own title when it came with one, else the sport. */
-export const activityName = (a, tr = s => s) => (a?.title ? a.title : tr(SPORT_LABEL[a?.sport] || SPORT_LABEL.other))
+export const activityName = (a, tr = s => s) => {
+  if (a?.title) return a.title
+  return tr(a?.bouldering ? 'Bouldering' : SPORT_LABEL[a?.sport] || SPORT_LABEL.other)
+}
 
 /** "Run · 42 min · 8.1 km" (km in the profile's unit is the caller's business: `dist` formats it). */
 export function activityLine(a, tr = s => s, dist = km => `${km} km`) {

@@ -16,7 +16,8 @@ import { retapTab } from '../lib/scroll-top.js'
 // state it took with it is the DOM node itself: focus, the :active tint, any in-flight transition.
 function Tab({ active, icon, label, onClick, dot, tour }) {
   return (
-    <button className={active ? 'on' : ''} onClick={onClick} data-tour={tour} aria-label={dot ? label + ', ' + t('Connection problem') : undefined}>
+    <button className={active ? 'on' : ''} onClick={onClick} data-tour={tour}
+      aria-current={active ? 'location' : undefined} aria-label={dot ? label + ', ' + t('Connection problem') : label}>
       <span className="tab-ic"><Icon name={icon} />{dot && <span className="tab-dot" aria-hidden="true" />}</span><span>{label}</span>
     </button>
   )

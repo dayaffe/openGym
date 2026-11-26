@@ -11,7 +11,7 @@ import { reportSheet } from '../components/ReportSheet.jsx'
 import { recoverySessionsOf } from '../lib/recovery-sessions.js'
 import { recoverySheet, RecoveryRow } from '../components/RecoverySheet.jsx'
 import { activitiesOf } from '../lib/activities.js'
-import { ActivityRow } from '../components/ActivitySheet.jsx'
+import { ActivityRow, activitySheet } from '../components/ActivitySheet.jsx'
 
 // Newest first: every workout, and in between them the days off you left a note on (#261) and the
 // recovery sessions (sauna, ice bath, lib/recovery-sessions.js). A note on a day that has a workout
@@ -56,6 +56,7 @@ export default function History() {
       {rows.length > 0 && <button className="iconbtn" onClick={() => recoverySheet()} aria-label={t('Log recovery')} title={t('Log recovery')} style={{ marginInlineEnd: 8 }}><Icon name="sparkles" /></button>}
       {S.workouts.length > 0 && <button className="iconbtn" onClick={reportSheet} aria-label={t('Performance report')} title={t('Performance report')}><Icon name="note" /></button>}</div>
     {rows.length > 0 && <Button icon="plus" data-tour="history-add" onClick={logPastWorkoutSheet} style={{ marginBottom: 12 }}>{t('Log a past workout')}</Button>}
+    <Button icon="pullup" onClick={() => activitySheet({ bouldering: true })} style={{ marginBottom: 12 }}>{t('Log bouldering')}</Button>
     {rows.length ? <><div className="list">{(more ? rows.slice(0, shown) : rows).map((r, i) => r.w
       ? <WorkoutRow key={r.w.id} w={r.w} tour={i === 0 ? 'history-row' : undefined} onClick={() => workoutDetailSheet(r.w)} />
       : r.rec ? <RecoveryRow key={'rec-' + r.rec.id} r={r.rec} />
