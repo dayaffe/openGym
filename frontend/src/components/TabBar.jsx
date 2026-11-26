@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutineIds, effectiveRoutines } from '../lib/history.js'
@@ -9,6 +9,8 @@ import Icon from './Icon.jsx'
 import Elapsed from './Elapsed.jsx'
 import { useConnectionTrouble } from './SyncBanner.jsx'
 import { retapTab } from '../lib/scroll-top.js'
+import { bindTabGlass } from '../lib/vertical-bar.js'
+import { useUI } from '../store/useUI.js'
 
 // Module scope, not TabBar's render body. Declared inside it, `Tab` was a new function on every
 // render, so React saw a different component type each time and threw the button away and built a
@@ -29,6 +31,7 @@ export const START_HOLD_MS = 450
 export default function TabBar({ onStart, onPick }) {
   const nav = useNavigate()
   const hold = useRef(null)
+  const bar = useRef(null)
   const loc = useLocation()
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
@@ -36,6 +39,9 @@ export default function TabBar({ onStart, onPick }) {
   // With the connection banner switched off, a sync problem shows as a dot on Home, the tab
   // Settings lives under (#369, #330).
   const trouble = useConnectionTrouble()
+  const blocked = useUI(s => s.sheets.length > 0)
+  const visible = !!user || isGuest
+  useLayoutEffect(() => bindTabGlass(bar.current, blocked), [visible, blocked])
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // A screen without a tab of its own lights the tab it is opened from (Muscles from both).
@@ -81,7 +87,7 @@ export default function TabBar({ onStart, onPick }) {
   const holdEnd = () => { if (hold.current !== 'fired') { clearTimeout(hold.current); hold.current = null } }
 
   return (
-    <nav id="tabbar">
+    <nav id="tabbar" ref={bar}>
       <Tab active={on('home')} icon="house" label={t('Home')} dot={trouble} onClick={() => switchTab('/home')} tour="tab-home" />
       <Tab active={on('plan')} icon="calendar" label={t('Plan')} onClick={() => switchTab('/plan')} tour="tab-plan" />
       {/* On the workout screen itself there is nothing to resume, so the button reads as the
