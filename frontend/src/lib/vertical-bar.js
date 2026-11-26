@@ -43,7 +43,8 @@ export function bindTabGlass(nav, blocked) {
   const buttons = () => [...nav.querySelectorAll('button[data-tour^="tab-"]')]
   const layout = () => {
     if (blocked || document.hidden || getComputedStyle(nav).flexDirection !== 'column'
-        || (viewport && (viewport.scale !== 1 || viewport.offsetTop || viewport.offsetLeft))) return {}
+        || (viewport && (Math.abs(viewport.scale - 1) > 0.01
+          || Math.abs(viewport.offsetTop) > 1 || Math.abs(viewport.offsetLeft) > 1))) return {}
     const entries = buttons()
     if (entries.length !== 4) return {}
     const rects = entries.map(el => el.getBoundingClientRect())
@@ -53,7 +54,7 @@ export function bindTabGlass(nav, blocked) {
     const top = Math.min(...rects.map(r => r.top)) - 3
     const bottom = Math.max(...rects.map(r => r.bottom)) + 3
     const start = nav.querySelector('button.start')?.getBoundingClientRect()
-    if (top < Math.max(0, navRect.top) || bottom > Math.min(window.innerHeight, navRect.bottom)
+    if (top < Math.max(0, navRect.top) - 1 || bottom > Math.min(window.innerHeight, navRect.bottom) + 1
         || (start && start.top < bottom && start.bottom > top)) return {}
     return {
       x: left, y: top, width: right - left, height: bottom - top, theme: root.dataset.theme,

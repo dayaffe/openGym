@@ -71,18 +71,27 @@ public class VerticalBarPlugin: CAPPlugin, CAPBridgedPlugin {
         guard let webView = bridge?.webView, let window = webView.window,
               let tabs = call.getArray("tabs") as? [[String: Any]], tabs.count == 4,
               let options = call.options as? [String: Any], let frame = Self.tabFrame(options),
-              webView.bounds.contains(frame) else { return false }
+              webView.bounds.insetBy(dx: -1, dy: -1).contains(frame) else { return false }
 
         let symbols = ["tab-home": "house", "tab-plan": "calendar",
                        "tab-stats": "chart.bar", "tab-library": "dumbbell"]
         let controls = tabs.compactMap { tab -> (String, String, String, CGRect, Bool, Bool)? in
             guard let id = tab["id"] as? String, let symbol = symbols[id],
                   let label = tab["label"] as? String, let rect = Self.tabFrame(tab),
-                  frame.contains(rect) else { return nil }
+                  frame.insetBy(dx: -1, dy: -1).contains(rect) else { return nil }
             return (id, symbol, label, rect, tab["selected"] as? Bool == true, tab["dot"] as? Bool == true)
         }
         guard controls.count == tabs.count else { return false }
-        let glass = tabGlass ?? UIVisualEffectView(effect: UIGlassEffect(style: .regular))
+        let glass: UIVisualEffectView
+        if let tabGlass {
+            glass = tabGlass
+        } else {
+            // The bar has only symbols over muted page surfaces, so clear glass can
+            // show more of the scrolling backdrop while keeping the symbols legible.
+            let effect = UIGlassEffect(style: .clear)
+            effect.isInteractive = true
+            glass = UIVisualEffectView(effect: effect)
+        }
         glass.cornerConfiguration = .capsule()
         glass.overrideUserInterfaceStyle = call.getString("theme") == "light" ? .light : .dark
         if glass.superview !== window { window.addSubview(glass) }
@@ -101,7 +110,7 @@ public class VerticalBarPlugin: CAPPlugin, CAPBridgedPlugin {
             button.accessibilityLabel = label
             if selected { button.accessibilityTraits.insert(.selected) }
             else { button.accessibilityTraits.remove(.selected) }
-            button.backgroundColor = selected ? .label.withAlphaComponent(0.12) : .clear
+            button.backgroundColor = selected ? .label.withAlphaComponent(0.10) : .clear
             button.layer.cornerRadius = button.bounds.height / 2
             let badgeTag = 901
             if dot {

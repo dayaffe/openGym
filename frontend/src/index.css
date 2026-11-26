@@ -4735,6 +4735,29 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
   background:transparent;border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;
 }
 #tabbar[data-native-glass] button[data-tour^="tab-"]{visibility:hidden}
+/* Extend only the home card surfaces under the native capsule. Text and touch targets
+   stay inside their usual margins, with real scrolling surfaces behind the glass. */
+:root:not([data-vbar]) body.tabbar-side:has(#tabbar[data-native-glass]){
+  --glass-bleed:calc(76px + var(--pad));
+}
+:root[data-vbar="right"] body:has(#tabbar[data-native-glass]){
+  --glass-bleed:calc(var(--sar) + var(--pad));
+}
+:root[data-vbar="left"] body:has(#tabbar[data-native-glass]){
+  --glass-bleed:calc(var(--sal) + var(--pad));
+}
+body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card{
+  position:relative;
+}
+body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card::before{
+  content:"";position:absolute;inset-block:1px;left:calc(100% - var(--r-card));
+  width:var(--glass-bleed);border-radius:inherit;pointer-events:none;
+  background:linear-gradient(to right, transparent, var(--surface) 25%, transparent);
+}
+:root[data-vbar="left"] body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card::before{
+  left:auto;right:calc(100% - var(--r-card));
+  background:linear-gradient(to left, transparent, var(--surface) 25%, transparent);
+}
 :root[data-vbar] #tabbar .tab-time{max-width:100%;overflow-wrap:anywhere}
 :root[data-vbar] :is(.conn-bar,#timer,.composer,.sheet,#app > .page.under){left:var(--sal);right:var(--sar)}
 :root[data-vbar] :is(#toast,.center){left:calc(50% + (var(--sal) - var(--sar)) / 2)}
