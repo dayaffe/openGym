@@ -1,11 +1,18 @@
 # Builds an unsigned device IPA from the fork's committed mobile bundle.
 # Manual runs leave an Actions artifact; sidestore-v* tags also publish a GitHub Release
-# containing the IPA, its icon, and an AltStore/SideStore source JSON.
+# containing the IPA, its icon, and an AltStore/SideStore source JSON. A manual run with
+# `publish` does the same as a tag: it tags sidestore-v<package.json version> on the commit it
+# built and publishes that release (refused when the tag already exists).
 # This uses only the repository's committed exercise media and requires no signing secrets.
 name: Build SideStore IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the SideStore release, tagged sidestore-v<version> on this commit'
+        type: boolean
+        default: false
   push:
     tags:
       - "sidestore-v*"
@@ -42,18 +49,30 @@ jobs:
       - name: Check release tag version
         id: version
         working-directory: frontend
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
         run: |
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
+          tag=""
           if [[ "$GITHUB_REF" == refs/tags/sidestore-v* ]]; then
             tag_version="${GITHUB_REF_NAME#sidestore-v}"
             if [[ "$tag_version" != "$version" ]]; then
               echo "Tag version $tag_version does not match frontend/package.json ($version)." >&2
               exit 1
             fi
+            tag="$GITHUB_REF_NAME"
+          elif [[ "$PUBLISH" == "true" ]]; then
+            tag="sidestore-v$version"
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+              echo "$tag already exists: bump frontend/package.json before publishing again." >&2
+              exit 1
+            fi
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Building openGym $version"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Building openGym $version${tag:+, publishing $tag}"
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -144,11 +163,12 @@ jobs:
           retention-days: 14
 
       - name: Publish the SideStore release
-        if: startsWith(github.ref, 'refs/tags/sidestore-v')
+        if: steps.version.outputs.tag != ''
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
           APP_VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
           release="frontend/ios/App/build/release"
@@ -157,7 +177,7 @@ jobs:
           cp "frontend/ios/App/build/$ipa" "$release/$ipa"
           cp frontend/public/icon-512.png "$release/openGym-icon.png"
 
-          base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$TAG"
           source_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/latest/download/sidestore-source.json"
           python3 scripts/ios/make-sidestore-source.py \
             --ipa "$release/$ipa" \
@@ -179,7 +199,9 @@ jobs:
           The IPA uses the original openGym iOS bundle identifier. It cannot be installed alongside another build with that identifier.
           EOF
 
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
+          # A pushed tag is there already; a manual run makes it, on the commit it built.
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then where=(--verify-tag); else where=(--target "$GITHUB_SHA"); fi
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" "${where[@]}" \
             --title "openGym $APP_VERSION for SideStore" --notes-file "$release/notes.md" \
             "$release/$ipa" "$release/openGym-icon.png" "$release/sidestore-source.json"
 
