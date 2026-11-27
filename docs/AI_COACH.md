@@ -373,13 +373,14 @@ All built in `api/coach/core/context.js` and `payload.js`, by name, bounded, and
   weigh-ins the day had;
 - `rotation`: the routine loop and what is next, when the plan runs as one.
 
-Three more, each with its own switch under **Coach menu → What the Coach sees** (and on the
+Four more, each with its own switch under **Coach menu → What the Coach sees** (and on the
 consent screen), stored as `S.coach.share`:
 
 | Switch | Default | What goes |
 | --- | --- | --- |
 | Strength trends (`records`) | on | estimated 1RMs (Epley, work sets of 1-12 reps) of the ten most trained lifts: best, best of the last 4 weeks, of the 8 before, the trend |
 | Body measurements (`measurements`) | on | per field, the latest value and the one about eight weeks earlier (not blood pressure) |
+| Sport outside the gym (`activities`) | on | runs, rides, matches and bouldering sessions of the last 14 days (at most 20): sport, day, minutes, distance; for bouldering the scale, sends, flashes, goes, the hardest send (V and Font only) and the scale's own grades climbed. Never the gym's name or a grade the gym named itself |
 | Health (`health`) | **off** | daily check-ins of the last 14 days, the phone's vitals summary (sleep, resting heart rate, HRV, steps: latest and usual; sent with the question, never synced) and the latest blood pressure |
 
 Reviews and chat questions read them; a new plan and a debrief do not. Consent version 3 asks
@@ -491,7 +492,7 @@ renders from, so the screen cannot drift from the payload — are:
 | `profile` | the intake answers you gave the Coach, including any limitations |
 | `cohort` (optional) | only with comparison on and your own opt-in: anonymous medians from the other people sharing — never their data, and never yours to them beyond the same medians |
 | `prefs` | unit, language, effort scale |
-| `records`, `measurements`, `health` (switchable) | see "What the Coach reads" above; health is off until switched on |
+| `records`, `measurements`, `activities`, `health` (switchable) | see "What the Coach reads" above; health is off until switched on |
 
 ### Asking before it goes
 

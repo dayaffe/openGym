@@ -12,7 +12,7 @@
  */
 import { glyphStr } from './glyphs.js';
 import { LIBRARY, LIB_BY_ID, libraryHas, libraryName, librarySlice, swapSlice, isStretch, MAX_LIBRARY, ownsNoDumbbells, gymMachines } from './library.js';
-import { muscleLoad, gymOf, challengesOf, recordsOf, measurementsOf, healthOf, rotationOf } from './context.js';
+import { muscleLoad, gymOf, challengesOf, recordsOf, measurementsOf, activitiesOf, healthOf, rotationOf } from './context.js';
 import { shareOf } from './categories.js';
 import { asksForBodyweight, cleanHits } from './routine-library.js';
 
@@ -650,12 +650,13 @@ export function build(S, opts = {}) {
     if (challenges) p.challenges = challenges;
   }
   // The switchable categories (core/categories.js OPTIONAL_CATEGORIES): strength trends, body
-  // measurements and, only when switched on, health. A review and a question read them; the loop
+  // measurements, sport outside the gym and, only when switched on, health. A review and a question read them; the loop
   // order goes along with the plan.
   if (opts.kind === 'review' || opts.kind === 'ask') {
     const share = shareOf(S);
     if (share.records) { const r = recordsOf(S, now); if (r.length) p.records = r; }
     if (share.measurements) { const m = measurementsOf(S, now); if (m.length) p.measurements = m; }
+    if (share.activities) { const a = activitiesOf(S, now); if (a.length) p.activities = a; }
     if (share.health) { const h = healthOf(S, now, opts.vitals); if (h) p.health = h; }
     const rot = rotationOf(S);
     if (rot) p.rotation = rot;

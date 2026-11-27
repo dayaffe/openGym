@@ -18,10 +18,11 @@ export const DATA_CATEGORIES = Object.freeze([
 export const OPTIONAL_CATEGORIES = Object.freeze([
   Object.freeze({ id: 'records', on: true }),       // estimated 1RMs and their 12-week trend
   Object.freeze({ id: 'measurements', on: true }),  // body measurements, latest and eight weeks before
+  Object.freeze({ id: 'activities', on: true }),    // sport outside the gym in the last two weeks, bouldering grades included
   Object.freeze({ id: 'health', on: false })        // daily check-ins, phone vitals, blood pressure
 ]);
 
-/** The switches as they stand for a profile: { records, measurements, health }. */
+/** The switches as they stand for a profile: { records, measurements, activities, health }. */
 export function shareOf(S) {
   const set = S && S.coach && S.coach.share && typeof S.coach.share === 'object' ? S.coach.share : {};
   const out = {};

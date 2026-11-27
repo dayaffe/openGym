@@ -4734,30 +4734,10 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 :root #tabbar[data-native-glass]{
   background:transparent;border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;
 }
-#tabbar[data-native-glass] button[data-tour^="tab-"]{visibility:hidden}
-/* Extend only the home card surfaces under the native capsule. Text and touch targets
-   stay inside their usual margins, with real scrolling surfaces behind the glass. */
-:root:not([data-vbar]) body.tabbar-side:has(#tabbar[data-native-glass]){
-  --glass-bleed:calc(76px + var(--pad));
-}
-:root[data-vbar="right"] body:has(#tabbar[data-native-glass]){
-  --glass-bleed:calc(var(--sar) + var(--pad));
-}
-:root[data-vbar="left"] body:has(#tabbar[data-native-glass]){
-  --glass-bleed:calc(var(--sal) + var(--pad));
-}
-body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card{
-  position:relative;
-}
-body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card::before{
-  content:"";position:absolute;inset-block:1px;left:calc(100% - var(--r-card));
-  width:var(--glass-bleed);border-radius:inherit;pointer-events:none;
-  background:linear-gradient(to right, transparent, var(--surface) 25%, transparent);
-}
-:root[data-vbar="left"] body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card::before{
-  left:auto;right:calc(100% - var(--r-card));
-  background:linear-gradient(to left, transparent, var(--surface) 25%, transparent);
-}
+/* Drawn natively in Liquid Glass (VerticalBarPlugin.swift): the tabs and Start's disc. The page's
+   buttons stay where they are, invisible, as the layout the glass is drawn from; Start's running
+   clock under the disc stays the page's own text. */
+#tabbar[data-native-glass] button[data-tour^="tab-"],#tabbar[data-native-glass] button.start .cir{visibility:hidden}
 :root[data-vbar] #tabbar .tab-time{max-width:100%;overflow-wrap:anywhere}
 :root[data-vbar] :is(.conn-bar,#timer,.composer,.sheet,#app > .page.under){left:var(--sal);right:var(--sar)}
 :root[data-vbar] :is(#toast,.center){left:calc(50% + (var(--sal) - var(--sar)) / 2)}
@@ -4773,23 +4753,89 @@ body:has(#tabbar[data-native-glass]) #app > .page[data-path="/home"] > .card::be
 :root[data-vbar] .cp-screen{padding-left:calc(16px + var(--sal));padding-right:calc(16px + var(--sar))}
 :root[data-vbar] .wrapped{padding-left:var(--sal);padding-right:var(--sar)}
 
-/* Bouldering tallies in the activity sheet. Keep the grade name beside its swatch. */
-.boulder-fields{display:grid;gap:12px;margin:12px 0;padding:12px;background:var(--surface);border-radius:var(--r)}
-.boulder-fields fieldset{border:0;padding:0;margin:0;min-inline-size:0}
-.boulder-fields legend{padding:0;margin-bottom:8px}
-.boulder-field{display:grid;gap:6px}
-.boulder-grades,.boulder-counts,.boulder-custom{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.boulder-grades .chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;white-space:normal;text-align:start}
-.boulder-swatch{inline-size:12px;block-size:12px;flex:none;border:1px solid var(--sep-op);border-radius:50%}
-.boulder-custom{margin-top:8px}
-.boulder-custom .input{flex:1;min-width:9rem}
-.boulder-counts > div{display:grid;gap:4px}
-.boulder-counts .stp button,.boulder-custom .btn{min-width:44px;min-height:44px}
+/* ------------------------------------------------------------ bouldering -- */
+/* components/BoulderingFields.jsx and BoulderingSession.jsx: a grade grid you pick from, three big
+   result buttons under it (Flash, Sent, Fell), the latest climbs with Undo, and the pyramid. Every
+   target 44 pt or more, since this is used with chalky fingers between two climbs. */
 .home-session-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:4px}
 .home-session-actions .btn{min-height:44px}
-.boulder-elapsed{font-variant-numeric:tabular-nums}
-.boulder-live-grades{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));gap:8px}
-.boulder-live-grades .boulder-live-grade{display:flex;justify-content:flex-start;gap:8px;min-height:48px;padding:8px 10px;overflow-wrap:anywhere;text-align:start}
-.boulder-live-grade .boulder-elapsed{margin-inline-start:auto}
-.boulder-live-summary{flex-wrap:wrap;gap:8px}
-.boulder-live-summary .btn{min-height:44px}
+.boulder-home .lbl2{font-variant-numeric:tabular-nums}
+.boulder-lead{margin:-4px 0 12px}
+.boulder-fields{display:grid;gap:14px;margin:12px 0;padding:12px;background:var(--surface);border-radius:var(--r)}
+.boulder-field{display:grid;gap:6px;min-width:0}
+.boulder-chips{display:flex;flex-wrap:wrap;gap:8px}
+.boulder-chips .chip{min-height:44px;white-space:normal;text-align:start}
+.boulder-fields .chip:not(.on){background:var(--surface-2)}
+.boulder-chips .chip.ichip{display:inline-flex;align-items:center;gap:5px}
+.boulder-swatch{inline-size:12px;block-size:12px;flex:none;border:1px solid var(--sep-op);border-radius:50%}
+.boulder-custom{display:flex;align-items:center;gap:8px;margin-top:8px}
+.boulder-custom .input{flex:1;min-width:8rem}
+.boulder-custom .btn{min-height:44px}
+.boulder-live-h{align-items:baseline;gap:12px}
+.boulder-live-h h3{margin-bottom:2px}
+.boulder-clock{font-size:var(--fs-title3);font-weight:600;font-variant-numeric:tabular-nums;color:var(--orange-ink)}
+.boulder-where{display:flex;justify-content:space-between;gap:12px;width:100%;min-height:44px;align-items:center;
+  padding:0;color:var(--label-2);font-size:var(--fs-subhead);text-align:start}
+.boulder-where > span:first-child{overflow-wrap:anywhere}
+.boulder-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;margin:10px 0 14px;
+  border-radius:var(--r);overflow:hidden;background:var(--sep-op)}
+.boulder-stats > div{background:var(--surface);padding:10px 8px;min-width:0}
+.boulder-stats dt{font-size:var(--fs-caption);color:var(--label-2);overflow-wrap:anywhere}
+.boulder-stats dd{margin:2px 0 0;font-size:var(--fs-title3);font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.boulder-card .boulder-stats > div{background:var(--surface-2)}
+.boulder-logger{display:grid;gap:10px}
+.boulder-grade-h{min-height:28px}
+.boulder-grades{display:grid;grid-template-columns:repeat(auto-fill,minmax(4.25rem,1fr));gap:6px}
+.boulder-grade{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:6px 4px;
+  border-radius:var(--r-sm,10px);background:var(--surface);color:var(--label);font-size:var(--fs-subhead);font-weight:500;
+  box-shadow:inset 0 0 0 var(--hair) var(--sep-op);transition:background var(--fast),box-shadow var(--fast),transform var(--fast) var(--ease)}
+.boulder-fields .boulder-grade{background:var(--surface-2)}
+.boulder-grade:active{transform:scale(var(--press-scale))}
+.boulder-grade .bg-top{display:inline-flex;align-items:center;gap:4px;max-width:100%}
+.boulder-grade .bg-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boulder-grade .bg-n{font-size:var(--fs-caption);color:var(--label-2);font-variant-numeric:tabular-nums;font-weight:400}
+.boulder-grade.on{background:var(--acc-soft);box-shadow:inset 0 0 0 2px var(--acc);color:var(--acc-ink)}
+.boulder-grade.on .bg-n{color:var(--acc-ink)}
+.boulder-grade.add{color:var(--acc-ink);font-weight:400}
+.boulder-grade.add .bg-n{color:inherit;text-align:center}
+.bg-n[data-bump]{animation:boulder-bump .42s var(--ease)}
+@keyframes boulder-bump{0%{transform:scale(1)}35%{transform:scale(1.35)}100%{transform:scale(1)}}
+.boulder-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.boulder-result{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;padding:8px 4px;
+  border-radius:var(--r);font-size:var(--fs-callout);font-weight:600;transition:transform var(--fast) var(--ease),opacity var(--fast)}
+.boulder-result .icn{font-size:1.5rem}
+.boulder-result:active{transform:scale(var(--press-scale))}
+.boulder-result:disabled{opacity:.32}
+.boulder-result.is-flash{background:rgba(255,214,10,.22);background:color-mix(in srgb,var(--yellow) 22%,transparent);color:var(--gold-ink)}
+.boulder-result.is-send{background:var(--acc);color:var(--on-acc)}
+.boulder-result.is-fall{background:var(--surface-2);color:var(--label)}
+.boulder-recent{gap:8px;min-height:44px}
+.boulder-recent-list{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;min-width:0;mask-image:linear-gradient(to right,#000 80%,transparent)}
+:root[dir="rtl"] .boulder-recent-list{mask-image:linear-gradient(to left,#000 80%,transparent)}
+.boulder-recent-i{display:inline-flex;align-items:center;gap:4px;flex:none;padding:4px 8px;border-radius:99px;background:var(--surface-2);
+  font-size:var(--fs-footnote);font-variant-numeric:tabular-nums}
+.boulder-recent-i .icn{font-size:.8125rem}
+.boulder-recent-i.is-flash .icn{color:var(--gold-ink)}
+.boulder-recent-i.is-send .icn{color:var(--green-ink)}
+.boulder-recent-i.is-fall .icn{color:var(--label-3)}
+.boulder-recent-i:first-child{animation:boulder-in .3s var(--ease)}
+@keyframes boulder-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.boulder-pyramid{list-style:none;margin:10px 0;padding:0;display:grid;gap:6px}
+.boulder-pyramid li{display:grid;grid-template-columns:minmax(3.5rem,auto) minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:28px}
+.bp-g{display:inline-flex;align-items:center;gap:5px;font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bp-bar{display:flex;height:12px;width:calc(var(--w,1) * 100%);min-width:12px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.bp-bar i{display:block;height:100%;width:calc(var(--p,0) * 100%)}
+.bp-flash{background:var(--yellow)}
+.bp-send{background:var(--acc)}
+.bp-n{font-size:var(--fs-caption);color:var(--label-2);font-variant-numeric:tabular-nums;text-align:end}
+.bp-x{width:44px;height:44px;margin:-8px -6px -8px 0;color:var(--label-3);background:none}
+.boulder-trend{display:flex;align-items:flex-end;gap:4px;height:72px;margin:4px 0 12px}
+.boulder-trend-bar{flex:1;min-width:0;height:calc(var(--h) * 100%);display:flex;align-items:flex-start;justify-content:center;
+  border-radius:6px 6px 2px 2px;background:var(--acc-soft);box-shadow:inset 0 2px 0 var(--acc)}
+.boulder-trend-bar b{font-size:var(--fs-caption2);font-weight:600;color:var(--acc-ink);padding-top:3px;overflow:hidden;white-space:nowrap}
+.boulder-trend-bar:last-child{background:var(--acc-soft);background:color-mix(in srgb,var(--acc) 34%,transparent)}
+.boulder-card > .btn.ghost{margin-top:4px;padding-inline:0}
+@media (max-width:360px){
+  .boulder-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bp-n{grid-column:2 / -1;text-align:start}
+}

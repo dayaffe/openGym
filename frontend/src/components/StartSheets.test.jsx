@@ -42,11 +42,11 @@ const rowTitles = sel => [...host.querySelectorAll(sel + ' .lrow-t')].map(e => e
 const click = text => act(() => [...host.querySelectorAll('button')].find(b => b.textContent.trim() === text || b.querySelector('.lrow-t')?.textContent === text).click())
 
 describe('the start picker (#930)', () => {
-  it('has today first, then every other routine (unscheduled ones too), then freestyle', () => {
+  it('has today first, then every other routine (unscheduled ones too), then freestyle and bouldering', () => {
     startPickerSheet(); renderTop()
     expect(rowTitles('.start-today')).toEqual(['Push'])
     const all = rowTitles('.menu-list')
-    expect(all).toEqual(['Push', 'Pull', 'Morning mobility', 'Freestyle workout (pick as you go)'])
+    expect(all).toEqual(['Push', 'Pull', 'Morning mobility', 'Freestyle workout (pick as you go)', 'Start bouldering'])
     click('Morning mobility')
     expect(started).toEqual([['mob']])
     expect(useUI.getState().sheets).toHaveLength(0)

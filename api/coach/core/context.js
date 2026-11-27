@@ -10,10 +10,13 @@
  *   gym         the active gym's equipment (#808): what it can load, so a suggested weight or a
  *               swap fits the place you are standing in. Sizes only, never the gym's name.
  *   challenges  this month's three goals and which are done, so a plan can lean toward them.
+ *   activities  sport outside the gym in the last 14 days (a run, a match, a bouldering night
+ *               with its sends and top grade), since it tires the muscles a plan is about to load.
  *
  * No clock is read: `now` is handed in (epoch ms), so the server, the phone and the tests agree.
  */
 import { LIB_BY_ID } from './library.js';
+import { readBouldering, boulderingSummary, scaleOf, SCALE_GRADES } from './bouldering.js';
 
 const DAY = 86400000;
 const iso = ms => new Date(ms).toISOString().slice(0, 10);
@@ -245,4 +248,48 @@ export function rotationOf(S) {
   const seq = r.sequence.filter(x => typeof x === 'string' || x === null).slice(0, 14).map(x => (x === null ? 'rest' : x.slice(0, 64)));
   const at = Number.isInteger(r.at) && r.at >= 0 ? r.at % seq.length : 0;
   return { sequence: seq, next: seq[at] };
+}
+
+/* Sport outside the gym (frontend/src/lib/activities.js, S.activities): one entry per session,
+ * a cleared one a stamped empty entry. The sports the app names; anything else reads as other. */
+const SPORTS = ['run', 'ride', 'swim', 'hike', 'row', 'ski', 'football', 'racket', 'ball', 'climb', 'fight', 'yoga', 'dance', 'other'];
+export const MAX_ACTIVITIES = 20;
+const MAX_CLIMB_GRADES = 12;
+
+/**
+ * The activities of the last 14 days, newest first: `{ d, sport, min, km?, climb? }`. A bouldering
+ * session adds `climb`: its scale, sends, flashes, goes (`attempts`), the hardest grade sent on a
+ * ranked scale (`top`) and the grades it was on (`grades`, sends and goes each). Only the scales'
+ * own grades are named; a gym's own grade names and the gym's name are the person's text and stay
+ * home, as gymOf keeps the gym's. A session still running is left out until it is finished.
+ */
+export function activitiesOf(S, now) {
+  const end = Number.isFinite(now) ? now : Date.now();
+  const from = iso(end - 14 * DAY), today = iso(end);
+  const out = [];
+  for (const e of Object.values(isMap(S?.activities) ? S.activities : {})) {
+    if (!isMap(e) || typeof e.d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.d) || e.d < from || e.d > today) continue;
+    const min = Math.round(fin(e.min));
+    if (!(min >= 1)) continue;
+    const sport = SPORTS.includes(e.sport) ? e.sport : 'other';
+    const a = { d: e.d, sport, min: Math.min(24 * 60, min) };
+    const km = fin(e.km);
+    if (km > 0 && km < 1000) a.km = Math.round(km * 10) / 10;
+    if (sport === 'climb' && isMap(e.bouldering)) {
+      const b = readBouldering(e.bouldering);
+      if (b?.live) continue;
+      const s = boulderingSummary(b);
+      const scale = scaleOf(b);
+      if (s.attempts) {
+        a.climb = {
+          scale, sends: s.sends, flashes: s.flashes, attempts: s.attempts,
+          ...(s.top ? { top: s.top } : {}),
+          grades: b.circuits.filter(r => SCALE_GRADES[scale].includes(r.grade)).slice(0, MAX_CLIMB_GRADES)
+            .map(r => ({ grade: r.grade, sends: r.sends, attempts: r.attempts })),
+        };
+      }
+    }
+    out.push({ a, at: fin(e.at) || 0 });
+  }
+  return out.sort((x, y) => (x.a.d < y.a.d ? 1 : x.a.d > y.a.d ? -1 : y.at - x.at)).slice(0, MAX_ACTIVITIES).map(x => x.a);
 }

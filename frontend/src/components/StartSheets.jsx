@@ -75,10 +75,6 @@ function StartPicker({ close }) {
     <div className="muted small" style={{ marginBottom: 12 }}>
       {sessions.length ? t('Today is {0}. Or pick anything else.', sessions.map(nameOf).join(', ')) : t('Rest day, but no one’s stopping you.')}
     </div>
-    <div className="list menu-list" style={{ marginBottom: 14 }}>
-      <Row icon="pullup" title={activeBouldering(st) ? t('Resume bouldering') : t('Start bouldering')}
-        accessory="chevron" onClick={() => { close(); boulderingSessionSheet() }} />
-    </div>
     {left && <div className="list menu-list" style={{ marginBottom: 14 }}>
       <Row icon="history" iconTint="var(--orange)" title={tn('Start with the {0} exercise you didn’t get to', 'Start with the {0} exercises you didn’t get to', left.ex.length)}
         subtitle={leftFrom(left) + (firstOpen ? ' · ' + t('then {0}', nameOf(firstOpen)) : '')} accessory="chevron"
@@ -103,6 +99,9 @@ function StartPicker({ close }) {
     </>}
     <div className="list menu-list" style={{ marginBottom: 14 }}>
       <Row icon="shuffle" title={t('Freestyle workout (pick as you go)')} accessory="chevron" onClick={() => { close(); startFlow([]) }} />
+      {/* Not a workout: a climbing session, logged one tap per climb (components/BoulderingSession.jsx). */}
+      <Row icon="pullup" title={activeBouldering(st) ? t('Resume bouldering') : t('Start bouldering')}
+        accessory="chevron" onClick={() => { close(); boulderingSessionSheet() }} />
     </div>
     <Button variant="ghost" className="dim" onClick={close}>{t('Cancel')}</Button>
   </>

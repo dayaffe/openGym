@@ -23,7 +23,7 @@ const fail = (code, message) => Object.assign(new Error(message), { code })
  * Reads the profile, applies `change(S)` (→ { problems } | { result }), and writes it back.
  * `exact`: a revision the write must land on, no retry. → the tool's answer.
  */
-async function writePlan({ change, exact = null, dryRun = false, env, fetchImpl, view }) {
+export async function writePlan({ change, exact = null, dryRun = false, env, fetchImpl, view }) {
   const cfg = apiConfig(env)
   const opts = fetchImpl ? { fetchImpl } : {}
   const paths = profilePaths(cfg)

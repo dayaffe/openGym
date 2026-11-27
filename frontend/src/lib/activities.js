@@ -79,7 +79,8 @@ export function readActivity(entry) {
   const title = typeof entry.title === 'string' ? entry.title.trim().slice(0, TITLE_MAX) : ''
   const note = typeof entry.note === 'string' ? entry.note.trim().slice(0, NOTE_MAX) : ''
   const bouldering = sport === 'climb' ? readBouldering(entry.bouldering) : null
-  if (bouldering?.live && (!Number.isFinite(at) || at <= 0)) delete bouldering.live
+  // A live session counts from its start: without one it can only be a finished one.
+  if (bouldering?.live && (!Number.isFinite(at) || at <= 0)) { delete bouldering.live; delete bouldering.log; delete bouldering.last }
   return {
     d: entry.d, sport, min: Math.min(ACTIVITY_MIN_MAX, min),
     ...(km > 0 && km < 1000 ? { km: roundKm(km) } : {}),

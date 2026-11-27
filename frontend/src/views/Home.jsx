@@ -11,6 +11,8 @@ import { t, tn, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import { startOrPreview, startPickerSheet } from '../components/StartSheets.jsx'
 import { boulderingSessionSheet } from '../components/BoulderingSession.jsx'
+import { boulderingLine } from '../components/ActivitySheet.jsx'
+import Elapsed from '../components/Elapsed.jsx'
 import { activeBouldering } from '../lib/activities.js'
 import { daySessionsStatus } from '../lib/day-sessions.js'
 import { deriveSessionName } from '../lib/session-merge.js'
@@ -48,6 +50,7 @@ export default function Home() {
   // The banner switched off and the sync stuck: a dot on the gear (Settings → Show connection status).
   const trouble = useConnectionTrouble()
   const [weekOffset, setWeekOffset] = useState(0)
+  const climbing = activeBouldering(S)
 
   const today = new Date()
   // A weekday can hold several routines. `todayRoutines` is the whole day; `routine` is the
@@ -214,13 +217,26 @@ export default function Home() {
           and your other routines) is only reachable on a day with nothing planned. The one other
           way in, "Choose a different workout" on the weigh-in sheet, does not exist when the
           weigh-in is switched off. This is that door, and it starts nothing on its own. */}
+      {/* A bouldering session on the go (components/BoulderingSession.jsx): its own row, like a
+          workout in progress, with the clock and the sends so far. One tap back to the wall. */}
+      {climbing && <div className="today-row boulder-home" {...tappable(() => boulderingSessionSheet(climbing.id))}>
+        <div className="row" style={{ gap: 9, minWidth: 0 }}>
+          <span className="lrow-i" style={{ background: 'var(--orange)' }}><Icon name="pullup" /></span>
+          <div style={{ minWidth: 0 }}>
+            <div className="lbl2">{t('Bouldering')} · <Elapsed start={climbing.at} /></div>
+            <div className="ttl">{climbing.bouldering.gym || t('Session in progress')}</div>
+            <div className="ss">{boulderingLine(climbing.bouldering) || t('Pick a grade, then how it went.')}</div>
+          </div>
+        </div>
+        <span className="tag" style={{ color: 'var(--orange-ink)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
+      </div>}
       <div className="home-session-actions">
         {!S.active && <Button size="sm" variant="ghost" className="dim" icon="swap" onClick={startPickerSheet}>
           {t('Choose a different workout')}
         </Button>}
-        <Button size="sm" variant="ghost" icon="pullup" onClick={() => boulderingSessionSheet()}>
-          {activeBouldering(S) ? t('Resume bouldering') : t('Start bouldering')}
-        </Button>
+        {!climbing && <Button size="sm" variant="ghost" className="dim" icon="pullup" onClick={() => boulderingSessionSheet()}>
+          {t('Start bouldering')}
+        </Button>}
       </div>
       <SeasonDeco spot="home-hero" />
     </div>

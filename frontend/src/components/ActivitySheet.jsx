@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { t } from '../lib/i18n.js'
+import { t, tn } from '../lib/i18n.js'
 import { fmtDate, fmtNum, todayISO, uid } from '../lib/format.js'
 import { NOTE_MAX } from '../lib/history.js'
 import { tappable, useSheetKeyboard } from '../lib/use-sheet-keyboard.js'
 import { SPORTS, SPORT_LABEL, SPORT_ICON, SPORT_PRESETS, ACTIVITY_MIN_MAX, activitiesOf, withActivity, activityName } from '../lib/activities.js'
-import { boulderingTotals } from '../lib/bouldering.js'
-import BoulderingFields from './BoulderingFields.jsx'
+import { boulderingSummary, newBouldering, startScale } from '../lib/bouldering.js'
+import { BoulderingFields, gradeLabel } from './BoulderingFields.jsx'
 import { boulderingSessionSheet } from './BoulderingSession.jsx'
 import DateField from './DateField.jsx'
 import Icon from './Icon.jsx'
@@ -32,11 +32,13 @@ function ActivityLog({ id = null, day = null, bouldering = false, close }) {
   const S = useStore(s => s.S)
   const update = useStore(s => s.update)
   const toast = useUI(s => s.toast)
-  const had = id ? activitiesOf(S).find(a => a.id === id) : null
+  const sessions = activitiesOf(S)
+  const had = id ? sessions.find(a => a.id === id) : null
   const [sport, setSport] = useState(had?.sport || (bouldering ? 'climb' : 'run'))
-  const [climb, setClimb] = useState(() => had?.bouldering || {
-    gym: bouldering ? activitiesOf(S).find(a => a.bouldering?.gym)?.bouldering.gym || '' : '',
-    circuits: [],
+  const [climb, setClimb] = useState(() => {
+    if (had?.bouldering) return had.bouldering
+    const gym = sessions.find(a => a.bouldering?.gym)?.bouldering.gym || ''
+    return newBouldering(gym, startScale(sessions, gym))
   })
   const [logCircuits, setLogCircuits] = useState(!!had?.bouldering || bouldering)
   const [min, setMin] = useState(had?.min || SPORT_PRESETS[1])
@@ -63,7 +65,7 @@ function ActivityLog({ id = null, day = null, bouldering = false, close }) {
     toast(t('Activity removed'))
   }
   return <>
-    <h3>{bouldering || had?.bouldering ? t('Bouldering') : had ? t('Edit activity') : t('Log an activity')}</h3>
+    <h3>{had?.bouldering ? t('Bouldering') : bouldering ? t('Log bouldering') : had ? t('Edit activity') : t('Log an activity')}</h3>
     {!bouldering && !had?.bouldering && <>
       <div className="muted small" style={{ marginBottom: 12 }}>
         {had && SOURCE_LINE[had.src] ? t(SOURCE_LINE[had.src]) + '. ' : ''}
@@ -89,7 +91,7 @@ function ActivityLog({ id = null, day = null, bouldering = false, close }) {
       {!bouldering && !had?.bouldering && <Button aria-pressed={logCircuits} onClick={() => setLogCircuits(v => !v)}>
         {logCircuits ? t('Hide bouldering details') : t('Add bouldering details')}
       </Button>}
-      {logCircuits && <BoulderingFields value={climb} onChange={setClimb} onFocus={onNoteFocus} />}
+      {logCircuits && <BoulderingFields value={climb} onChange={setClimb} sessions={sessions} onFocus={onNoteFocus} />}
     </>}
     <textarea ref={noteRef} className="input" rows={2} maxLength={NOTE_MAX} value={note}
       placeholder={t('How was it? (optional)')} onFocus={onNoteFocus} onChange={e => setNote(e.target.value)} />
@@ -103,11 +105,21 @@ function ActivityLog({ id = null, day = null, bouldering = false, close }) {
 export const activitySheet = ({ id = null, day = null, bouldering = false } = {}) =>
   useUI.getState().openSheet(close => <ActivityLog id={id} day={day} bouldering={bouldering} close={close} />)
 
+/** "12 sends · top V5 · 3 flashes", or "4 of 9 sent" on a colour circuit with no flash. */
+export function boulderingLine(b) {
+  const s = boulderingSummary(b)
+  if (!s.attempts) return null
+  return [
+    s.top ? tn('{0} send', '{0} sends', s.sends) : t('{0} of {1} sent', s.sends, s.attempts),
+    s.top ? t('top {0}', gradeLabel(s.scale, s.top)) : null,
+    s.flashes ? t('{0} flashed', s.flashes) : null,
+  ].filter(Boolean).join(' · ')
+}
+
 /** One activity as a list row, the way History lists a workout. */
 export function ActivityRow({ a, showDate = true }) {
   const S = useStore(s => s.S)
-  const tally = a.bouldering && boulderingTotals(a.bouldering.circuits)
-  const result = tally?.attempts ? t('{0} of {1} sent', tally.sends, tally.attempts) : null
+  const result = a.bouldering ? boulderingLine(a.bouldering) : null
   const duration = a.bouldering?.live ? t('Session in progress') : t('{0} min', a.min)
   const open = () => a.bouldering?.live ? boulderingSessionSheet(a.id) : activitySheet({ id: a.id })
   return <div className="item act-row" data-activity={a.id} {...tappable(open)}>

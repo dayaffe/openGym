@@ -92,6 +92,9 @@ machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
   - `coach-adapt.js`: applies the Coach's changes to the workout in progress (the `adapt` job).
   - `workout-model.js`, `supersetFlow.js`: the in-session workout state machine.
   - `sync-merge.js`: the field-by-field merge behind the 409 retry (see "Sync" below).
+  - `activities.js` + `bouldering.js`: sport outside the gym; a bouldering session (grade scales,
+    flash/send/fall tallies, the live session's Undo log) re-exports `api/coach/core/bouldering.js`,
+    which the Coach (`context.js activitiesOf`) and the MCP (`log_bouldering`) read the same way.
   - `exercises.js` / `exercises-data.js`: the exercise library (5,632 catalogue exercises plus
     user-defined ones). `exercises-data.js`, `instr/`, `exercise-names/` and `exercise-desc/` are
     generated from `catalogue/` by `scripts/catalogue/build.mjs`; never edit them by hand.

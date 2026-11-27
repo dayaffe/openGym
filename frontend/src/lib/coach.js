@@ -86,6 +86,7 @@ export const CATEGORY_TEXT = {
 export const OPTIONAL_TEXT = {
   records: () => [t('Strength trends'), t('Estimated one-rep maxes of your main lifts over the last twelve weeks.')],
   measurements: () => [t('Body measurements'), t('Your latest measurements and the ones from about eight weeks before.')],
+  activities: () => [t('Sport outside the gym'), t('Runs, matches and bouldering sessions of the last two weeks, with your sends and grades. Never the gym’s name.')],
   health: () => [t('Health and how you feel'), t('Daily check-ins, sleep, resting heart rate, HRV and steps from your phone, and blood pressure. Off until you switch it on.')]
 }
 export const hasConsent = S => !!S?.coach?.consent?.agreedAt && S.coach.consent.version === CONSENT_VERSION
