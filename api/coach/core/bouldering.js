@@ -9,8 +9,9 @@
  *
  *   bouldering: {
  *     gym: 'VITAL Brooklyn',             // the person's own text
- *     scale: 'circuit' | 'v' | 'font',   // how the gym grades; sessions from before the scales
- *                                        // have none and are colour circuits
+ *     scale: 'vital' | 'v' | 'font' | 'circuit',
+ *                                        // how the gym grades; sessions from before the scales
+ *                                        // have none and were logged at VITAL, in its colours
  *     circuits: [{ grade, attempts, sends, flashes? }],
  *                                        // one tally per grade (the key predates the scales)
  *     live?: true,                       // started on the phone, not finished yet
@@ -24,21 +25,26 @@
  * one go and a send, a fall one go.
  */
 
-export const SCALES = ['circuit', 'v', 'font'];
-export const SCALE_LABEL = { circuit: 'Colours', v: 'V scale', font: 'Font' };
+// The picker's order. VITAL (the New York gyms) first: it is the default.
+export const SCALES = ['vital', 'v', 'font', 'circuit'];
+export const SCALE_LABEL = { vital: 'VITAL', v: 'V scale', font: 'Font', circuit: 'Colours' };
+export const DEFAULT_SCALE = 'vital';
 
-// Colour circuits, in the order the picker shows them. A gym's own order of difficulty is its
-// own, so a circuit has no rank: no "hardest grade" is claimed for one.
+// The colours a circuit can be painted in, in the order the picker shows them. Another gym's
+// order of difficulty is its own, so a plain circuit has no rank: no "hardest grade" is claimed.
 export const CIRCUIT_COLORS = {
   Green: '#4ca66a', Yellow: '#e8ba36', Blue: '#4a91e9', Orange: '#ee8748',
   Red: '#db525b', Pink: '#e879ad', Purple: '#9a76d5', Black: '#25252b',
   White: '#f4f4f5', Gray: '#8a8b93',
 };
+// VITAL's colour bands, easiest first, each a span of V grades the setters pick per problem.
+export const VITAL_RANGE = { Green: 'VB', Yellow: 'V0-1', Orange: 'V2-3', Red: 'V4-5', Purple: 'V6-7', Black: 'V8-9', White: 'V10+' };
+export const VITAL_GRADES = Object.keys(VITAL_RANGE);
 export const V_GRADES = ['VB', ...Array.from({ length: 18 }, (_, i) => 'V' + i)];
 export const FONT_GRADES = ['3', '4', '4+', '5', '5+', '6A', '6A+', '6B', '6B+', '6C', '6C+',
   '7A', '7A+', '7B', '7B+', '7C', '7C+', '8A', '8A+', '8B', '8B+', '8C', '8C+', '9A'];
-export const SCALE_GRADES = { circuit: Object.keys(CIRCUIT_COLORS), v: V_GRADES, font: FONT_GRADES };
-const RANKED = new Set(['v', 'font']);
+export const SCALE_GRADES = { vital: VITAL_GRADES, v: V_GRADES, font: FONT_GRADES, circuit: Object.keys(CIRCUIT_COLORS) };
+const RANKED = new Set(['vital', 'v', 'font']);
 
 export const RESULTS = ['flash', 'send', 'fall'];
 export const MAX_COUNT = 999;
@@ -52,7 +58,7 @@ const count = v => (Number.isFinite(Number(v)) ? Math.min(MAX_COUNT, Math.max(0,
 const text = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max) : '');
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 
-export const scaleOf = b => (isMap(b) && SCALES.includes(b.scale) ? b.scale : 'circuit');
+export const scaleOf = b => (isMap(b) && SCALES.includes(b.scale) ? b.scale : DEFAULT_SCALE);
 export const isRanked = scale => RANKED.has(scale);
 
 /**
@@ -62,7 +68,7 @@ export const isRanked = scale => RANKED.has(scale);
 export function normalizeGrade(scale, raw) {
   const s = text(raw, MAX_GRADE_LENGTH);
   if (!s) return '';
-  const list = SCALE_GRADES[SCALES.includes(scale) ? scale : 'circuit'];
+  const list = SCALE_GRADES[SCALES.includes(scale) ? scale : DEFAULT_SCALE];
   const hit = list.find(g => same(g, s));
   if (hit) return hit;
   if (scale === 'v') {
@@ -81,8 +87,11 @@ export function gradeRank(scale, grade) {
   return isRanked(scale) ? SCALE_GRADES[scale].indexOf(grade) : -1;
 }
 
-/** The colour a circuit grade is painted, or null. */
-export const gradeColor = (scale, grade) => (scale === 'circuit' && Object.hasOwn(CIRCUIT_COLORS, grade) ? CIRCUIT_COLORS[grade] : null);
+/** What a grade means on the V scale where its scale says (VITAL's Red is V4-5), or null. */
+export const gradeRange = (scale, grade) => (scale === 'vital' && Object.hasOwn(VITAL_RANGE, grade) ? VITAL_RANGE[grade] : null);
+
+/** The colour a grade is painted (VITAL's bands, a circuit's colours), or null. */
+export const gradeColor = (scale, grade) => ((scale === 'circuit' || scale === 'vital') && SCALE_GRADES[scale].includes(grade) ? CIRCUIT_COLORS[grade] : null);
 
 function readLog(log, grades) {
   if (!Array.isArray(log)) return [];
@@ -119,8 +128,8 @@ export function readBouldering(value) {
 }
 
 /** An empty session at `gym`, graded on `scale`. */
-export const newBouldering = (gym = '', scale = 'circuit', live = false) => ({
-  gym: text(gym, MAX_GYM), scale: SCALES.includes(scale) ? scale : 'circuit', circuits: [], ...(live ? { live: true } : {}),
+export const newBouldering = (gym = '', scale = DEFAULT_SCALE, live = false) => ({
+  gym: text(gym, MAX_GYM), scale: SCALES.includes(scale) ? scale : DEFAULT_SCALE, circuits: [], ...(live ? { live: true } : {}),
 });
 
 function bump(row, result, dir) {
@@ -274,11 +283,11 @@ export function gymsOf(sessions) {
 }
 
 /** The scale a new session at `gym` starts on: that gym's last, else the latest session's, else `fallback`. */
-export function scaleFor(sessions, gym, fallback = 'v') {
+export function scaleFor(sessions, gym, fallback = DEFAULT_SCALE) {
   const list = (Array.isArray(sessions) ? sessions : []).filter(a => a?.bouldering);
   const at = gym ? list.find(a => a.bouldering.gym && same(a.bouldering.gym, gym)) : null;
   const pick = at || list[0];
-  return pick ? scaleOf(pick.bouldering) : (SCALES.includes(fallback) ? fallback : 'v');
+  return pick ? scaleOf(pick.bouldering) : (SCALES.includes(fallback) ? fallback : DEFAULT_SCALE);
 }
 
 /**
@@ -292,7 +301,7 @@ export function climbingStats(sessions, { from = '', to = '9999-12-31' } = {}) {
     .filter(a => a?.bouldering && !a.bouldering.live && typeof a.d === 'string' && a.d >= from && a.d <= to);
   const byScale = {};
   for (const a of list) { const s = scaleOf(a.bouldering); byScale[s] = (byScale[s] || 0) + 1; }
-  const scale = Object.entries(byScale).sort((x, y) => y[1] - x[1] || SCALES.indexOf(x[0]) - SCALES.indexOf(y[0]))[0]?.[0] || 'circuit';
+  const scale = Object.entries(byScale).sort((x, y) => y[1] - x[1] || SCALES.indexOf(x[0]) - SCALES.indexOf(y[0]))[0]?.[0] || DEFAULT_SCALE;
   let minutes = 0, attempts = 0, sends = 0, flashes = 0;
   const pyramid = { scale, circuits: [] };
   const tops = [];

@@ -38,6 +38,18 @@ test('the last 14 days, newest first, a bouldering session with its sends and th
   assert.ok(!JSON.stringify(a).includes('Kids wall'), 'a gym’s own grade names stay home');
 });
 
+test('a VITAL session names its hardest colour; one from before the scales reads as VITAL', () => {
+  const vital = { activities: {
+    v1: { d: day(1), sport: 'climb', min: 70, _ts: 1, bouldering: climbs(newBouldering('VITAL Brooklyn', 'vital'), [['Orange', 'flash'], ['Red', 'send'], ['Purple', 'fall']]) },
+    old: { d: day(2), sport: 'climb', min: 60, _ts: 1, bouldering: { gym: 'VITAL Brooklyn', circuits: [{ grade: 'Yellow', attempts: 2, sends: 2 }] } },
+  } };
+  const [a, b] = activitiesOf(vital, NOW);
+  assert.deepEqual(a.climb, { scale: 'vital', sends: 2, flashes: 1, attempts: 3, top: 'Red', grades: [
+    { grade: 'Orange', sends: 1, attempts: 1 }, { grade: 'Red', sends: 1, attempts: 1 }, { grade: 'Purple', sends: 0, attempts: 1 },
+  ] });
+  assert.deepEqual(b.climb, { scale: 'vital', sends: 2, flashes: 0, attempts: 2, top: 'Yellow', grades: [{ grade: 'Yellow', sends: 2, attempts: 2 }] });
+});
+
 test('never more than the cap, and nothing from a broken document', () => {
   const many = { activities: Object.fromEntries(Array.from({ length: 40 }, (_, i) => ['a' + i, { d: day(i % 10), sport: 'run', min: 30 }])) };
   assert.equal(activitiesOf(many, NOW).length, MAX_ACTIVITIES);

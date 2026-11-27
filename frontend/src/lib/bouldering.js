@@ -3,21 +3,21 @@
 // MCP tools so a session adds up the same everywhere; this re-exports them for the app and adds
 // what only the app needs.
 export {
-  SCALES, SCALE_LABEL, CIRCUIT_COLORS, V_GRADES, FONT_GRADES, SCALE_GRADES, RESULTS,
+  SCALES, SCALE_LABEL, DEFAULT_SCALE, CIRCUIT_COLORS, VITAL_GRADES, VITAL_RANGE, V_GRADES, FONT_GRADES, SCALE_GRADES, RESULTS,
   MAX_COUNT, MAX_GRADES, MAX_GRADE_LENGTH, MAX_GYM, LOG_MAX, IDLE_END_MS,
-  scaleOf, isRanked, normalizeGrade, gradeRank, gradeColor, readBouldering, newBouldering,
+  scaleOf, isRanked, normalizeGrade, gradeRank, gradeRange, gradeColor, readBouldering, newBouldering,
   logClimb, lastClimb, undoClimb, clearGrade, sortedTallies, boulderingSummary, boulderingTotals,
   finishMinutes, gymsOf, scaleFor, climbingStats,
 } from '../../../api/coach/core/bouldering.js'
-import { SCALE_GRADES, gradeRank, gymsOf, isRanked, scaleFor } from '../../../api/coach/core/bouldering.js'
+import { DEFAULT_SCALE, SCALE_GRADES, gradeRank, gymsOf, isRanked, scaleFor } from '../../../api/coach/core/bouldering.js'
 
 // Gyms offered before you have climbed anywhere, each with the way it grades. Your own gyms
 // (the ones in your sessions) always come first.
 export const SUGGESTED_GYMS = [
-  { name: 'VITAL Brooklyn', scale: 'circuit' },
-  { name: 'VITAL Lower East Side', scale: 'circuit' },
-  { name: 'VITAL Upper East Side', scale: 'circuit' },
-  { name: 'VITAL Upper West Side', scale: 'circuit' },
+  { name: 'VITAL Brooklyn', scale: 'vital' },
+  { name: 'VITAL Lower East Side', scale: 'vital' },
+  { name: 'VITAL Upper East Side', scale: 'vital' },
+  { name: 'VITAL Upper West Side', scale: 'vital' },
 ]
 /** @deprecated the 1.4.5 name, kept for anything still importing it. */
 export const VITAL_GYMS = SUGGESTED_GYMS.map(g => g.name)
@@ -33,17 +33,17 @@ export function gymChoices(sessions, max = 6) {
 export const suggestedScale = gym => SUGGESTED_GYMS.find(g => g.name.toLowerCase() === String(gym || '').toLowerCase())?.scale || null
 
 /** The scale a new session at `gym` starts on: that gym's last session's, a suggested gym's own,
- *  else the latest session's, else the V scale. */
+ *  else the latest session's, else VITAL's colours. */
 export function startScale(sessions, gym) {
   const g = String(gym || '').toLowerCase()
   const been = g && (Array.isArray(sessions) ? sessions : []).some(a => String(a?.bouldering?.gym || '').toLowerCase() === g)
-  return (!been && suggestedScale(gym)) || scaleFor(sessions, gym, 'v')
+  return (!been && suggestedScale(gym)) || scaleFor(sessions, gym, DEFAULT_SCALE)
 }
 
 // On a ranked scale the picker shows the grades up to a few past the hardest you have climbed
 // (at least to V6 / 6C), so 19 V grades do not bury the ones you climb. "All grades" shows them all.
 const WINDOW_AHEAD = 3
-const WINDOW_MIN = { v: 8, font: 10 }
+const WINDOW_MIN = { vital: 7, v: 8, font: 10 }
 
 /**
  * The grades the picker offers for `scale`: the scale's own (on a ranked scale up to a few past
@@ -64,7 +64,7 @@ export function gradesSeen(sessions, scale) {
   const out = new Set()
   for (const a of Array.isArray(sessions) ? sessions : []) {
     const b = a?.bouldering
-    if (!b || (b.scale || 'circuit') !== scale) continue
+    if (!b || (b.scale || DEFAULT_SCALE) !== scale) continue
     for (const r of b.circuits || []) out.add(r.grade)
   }
   return [...out]

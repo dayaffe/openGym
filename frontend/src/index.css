@@ -4823,6 +4823,7 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .boulder-pyramid{list-style:none;margin:10px 0;padding:0;display:grid;gap:6px}
 .boulder-pyramid li{display:grid;grid-template-columns:minmax(3.5rem,auto) minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:28px}
 .bp-g{display:inline-flex;align-items:center;gap:5px;font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bp-r{font-size:var(--fs-caption);font-weight:400;color:var(--label-2)}
 .bp-bar{display:flex;height:12px;width:calc(var(--w,1) * 100%);min-width:12px;border-radius:99px;background:var(--surface-3);overflow:hidden}
 .bp-bar i{display:block;height:100%;width:calc(var(--p,0) * 100%)}
 .bp-flash{background:var(--yellow)}
@@ -4834,6 +4835,9 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
   border-radius:6px 6px 2px 2px;background:var(--acc-soft);box-shadow:inset 0 2px 0 var(--acc)}
 .boulder-trend-bar b{font-size:var(--fs-caption2);font-weight:600;color:var(--acc-ink);padding-top:3px;overflow:hidden;white-space:nowrap}
 .boulder-trend-bar:last-child{background:var(--acc-soft);background:color-mix(in srgb,var(--acc) 34%,transparent)}
+/* VITAL's bands: each bar in its own colour, the band named by the colour itself. */
+.boulder-trend-bar[style*="--c"]{background:var(--c);box-shadow:inset 0 0 0 var(--hair) var(--sep-op);opacity:.85}
+.boulder-trend-bar[style*="--c"]:last-child{opacity:1}
 .boulder-card > .btn.ghost{margin-top:4px;padding-inline:0}
 @media (max-width:360px){
   .boulder-stats{grid-template-columns:repeat(2,minmax(0,1fr))}

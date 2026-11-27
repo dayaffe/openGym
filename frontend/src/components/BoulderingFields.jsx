@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from 'react'
 import { t } from '../lib/i18n.js'
 import { fmtNum } from '../lib/format.js'
 import {
-  SCALES, SCALE_LABEL, MAX_GRADE_LENGTH, MAX_GYM, gradeColor, normalizeGrade, logClimb, undoClimb, lastClimb,
+  SCALES, SCALE_LABEL, DEFAULT_SCALE, MAX_GRADE_LENGTH, MAX_GYM, gradeColor, gradeRange, normalizeGrade, logClimb, undoClimb, lastClimb,
   clearGrade, sortedTallies, boulderingSummary, gymChoices, gradeChoices, gradesSeen, isRanked,
 } from '../lib/bouldering.js'
 import Icon from './Icon.jsx'
@@ -51,12 +51,12 @@ export function GymPicker({ gym, sessions, onChange }) {
   </div>
 }
 
-/** Colours, V scale or Font. */
+/** VITAL's colours (the default), V scale, Font or another gym's colours. VITAL is a name, not translated. */
 export function ScalePicker({ scale, onChange }) {
   return <div className="boulder-field">
     <span className="small muted" id="boulder-scale-l">{t('Grading')}</span>
     <Segmented ariaLabelledby="boulder-scale-l" value={scale} onChange={onChange}
-      options={SCALES.map(s => ({ value: s, label: t(SCALE_LABEL[s]) }))} />
+      options={SCALES.map(s => ({ value: s, label: s === 'vital' ? SCALE_LABEL.vital : t(SCALE_LABEL[s]) }))} />
   </div>
 }
 
@@ -67,7 +67,7 @@ export function BoulderingStats({ b }) {
     [t('Sends'), fmtNum(s.sends)],
     [t('Flashes'), fmtNum(s.flashes)],
     [t('Attempts'), fmtNum(s.attempts)],
-    ...(isRanked(s.scale) ? [[t('Top grade'), s.top || '–']] : [[t('Send rate'), s.rate == null ? '–' : `${Math.round(s.rate * 100)}%`]]),
+    ...(isRanked(s.scale) ? [[t('Top grade'), s.top ? gradeLabel(s.scale, s.top) : '–']] : [[t('Send rate'), s.rate == null ? '–' : `${Math.round(s.rate * 100)}%`]]),
   ]
   return <dl className="boulder-stats" aria-live="polite">
     {tiles.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
@@ -80,7 +80,7 @@ export function BoulderingStats({ b }) {
  */
 export function GradePyramid({ b, onClear, rows: given }) {
   const rows = given || sortedTallies(b)
-  const scale = b?.scale || 'circuit'
+  const scale = b?.scale || DEFAULT_SCALE
   if (!rows.length) return null
   const most = Math.max(...rows.map(r => r.attempts))
   return <ul className="boulder-pyramid" aria-label={t('Grades')}>
@@ -89,7 +89,7 @@ export function GradePyramid({ b, onClear, rows: given }) {
       const fl = r.flashes || 0
       const line = [t('{0} of {1} sent', r.sends, r.attempts), fl ? t('{0} flashed', fl) : null].filter(Boolean).join(' · ')
       return <li key={r.grade}>
-        <span className="bp-g"><Swatch scale={scale} grade={r.grade} />{label}</span>
+        <span className="bp-g"><Swatch scale={scale} grade={r.grade} />{label}{gradeRange(scale, r.grade) && <span className="bp-r">{gradeRange(scale, r.grade)}</span>}</span>
         <span className="bp-bar" aria-hidden="true" style={{ '--w': r.attempts / most }}>
           <i className="bp-flash" style={{ '--p': fl / r.attempts }} />
           <i className="bp-send" style={{ '--p': (r.sends - fl) / r.attempts }} />
@@ -106,7 +106,9 @@ function firstGrade(b, choices) {
   if (last) return last.g
   const busiest = [...(b.circuits || [])].sort((x, y) => y.attempts - x.attempts)[0]
   if (busiest) return busiest.grade
-  return choices[Math.min(choices.length - 1, isRanked(b.scale) ? 3 : 0)] || ''
+  // Nothing climbed yet: a beginner's grade (VITAL's Yellow, V2, Font 5), the first colour otherwise.
+  const start = { vital: 1, v: 3, font: 3 }[b.scale] ?? 0
+  return choices[Math.min(choices.length - 1, start)] || ''
 }
 
 /**
@@ -115,7 +117,7 @@ function firstGrade(b, choices) {
  * Undo in the session itself (lib/bouldering.js log); one logged after the fact keeps it here.
  */
 export default function ClimbLogger({ value, onChange, sessions, now = () => Date.now() }) {
-  const scale = value.scale || 'circuit'
+  const scale = value.scale || DEFAULT_SCALE
   const seen = useMemo(() => [...gradesSeen(sessions, scale), ...value.circuits.map(r => r.grade)], [sessions, scale, value.circuits])
   const [all, setAll] = useState(false)
   const [extra, setExtra] = useState([])
@@ -167,11 +169,14 @@ export default function ClimbLogger({ value, onChange, sessions, now = () => Dat
         const r = value.circuits.find(x => x.grade.toLowerCase() === g.toLowerCase())
         const on = g.toLowerCase() === picked.toLowerCase()
         const label = gradeLabel(scale, g)
+        const range = gradeRange(scale, g)
+        const named = range ? `${label} (${range})` : label
         return <button key={g} type="button" role="radio" aria-checked={on}
-          aria-label={r ? `${label}, ${t('{0} of {1} sent', r.sends, r.attempts)}` : label}
+          aria-label={r ? `${named}, ${t('{0} of {1} sent', r.sends, r.attempts)}` : named}
           className={'boulder-grade' + (on ? ' on' : '') + (r ? ' has' : '')} onClick={() => { setGrade(g); tap() }}>
           <span className="bg-top"><Swatch scale={scale} grade={g} /><span className="bg-l">{label}</span></span>
-          <span className="bg-n" key={bumped?.g === g ? bumped.n : 0} data-bump={bumped?.g === g || undefined}>{r ? `${r.sends}/${r.attempts}` : ' '}</span>
+          <span className="bg-n" key={bumped?.g === g ? bumped.n : 0} data-bump={bumped?.g === g || undefined}>
+            {[range, r ? `${r.sends}/${r.attempts}` : null].filter(Boolean).join(' · ') || ' '}</span>
         </button>
       })}
       <button type="button" className="boulder-grade add" aria-expanded={adding} onClick={() => setAdding(v => !v)}>

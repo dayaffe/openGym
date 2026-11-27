@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { t } from '../lib/i18n.js'
 import { fmtDate, fmtNum, isoOf, todayISO } from '../lib/format.js'
 import { activitiesOf } from '../lib/activities.js'
-import { climbingStats, isRanked } from '../lib/bouldering.js'
+import { climbingStats, gradeColor, isRanked } from '../lib/bouldering.js'
 import { boulderingSessionSheet } from './BoulderingSession.jsx'
 import { GradePyramid, gradeLabel } from './BoulderingFields.jsx'
 import { Button } from './ui.jsx'
@@ -28,7 +28,7 @@ export default function BoulderingCard({ S }) {
     [t('Sessions'), fmtNum(st.sessions)],
     [t('Sends'), fmtNum(st.sends)],
     [t('Flashes'), fmtNum(st.flashes)],
-    ...(ranked ? [[t('Top grade'), st.best || '–']] : [[t('Hours'), fmtNum(Math.round(st.minutes / 6) / 10)]]),
+    ...(ranked ? [[t('Top grade'), st.best ? gradeLabel(st.scale, st.best) : '–']] : [[t('Hours'), fmtNum(Math.round(st.minutes / 6) / 10)]]),
   ]
   return <div className="card boulder-card" data-bouldering-card>
     <div className="row between" style={{ alignItems: 'flex-start', gap: 12 }}>
@@ -40,9 +40,10 @@ export default function BoulderingCard({ S }) {
     </div>
     <dl className="boulder-stats">{tiles.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
     {ranked && tops.length > 1 && <div className="boulder-trend" role="img"
-      aria-label={t('Top grade per session') + ': ' + tops.map(x => `${fmtDate(x.d, true)} ${x.top}`).join(', ')}>
-      {tops.map((x, i) => <span key={x.d + i} className="boulder-trend-bar" style={{ '--h': hi > lo ? 0.25 + 0.75 * (x.rank - lo) / (hi - lo) : 1 }} title={`${fmtDate(x.d, true)} · ${x.top}`}>
-        <b>{x.top}</b>
+      aria-label={t('Top grade per session') + ': ' + tops.map(x => `${fmtDate(x.d, true)} ${gradeLabel(st.scale, x.top)}`).join(', ')}>
+      {tops.map((x, i) => <span key={x.d + i} className="boulder-trend-bar" title={`${fmtDate(x.d, true)} · ${gradeLabel(st.scale, x.top)}`}
+        style={{ '--h': hi > lo ? 0.25 + 0.75 * (x.rank - lo) / (hi - lo) : 1, ...(gradeColor(st.scale, x.top) ? { '--c': gradeColor(st.scale, x.top) } : {}) }}>
+        <b>{gradeColor(st.scale, x.top) ? '' : x.top}</b>
       </span>)}
     </div>}
     <GradePyramid b={{ scale: st.scale }} rows={st.pyramid} />

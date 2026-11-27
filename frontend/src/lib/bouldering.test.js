@@ -3,6 +3,7 @@ import {
   normalizeGrade, gradeRank, readBouldering, newBouldering, logClimb, undoClimb, lastClimb, clearGrade,
   sortedTallies, boulderingSummary, boulderingTotals, finishMinutes, gymsOf, scaleFor, climbingStats,
   gymChoices, startScale, gradeChoices, gradesSeen, LOG_MAX, MAX_GRADES, IDLE_END_MS,
+  VITAL_GRADES, gradeRange, gradeColor,
 } from './bouldering.js'
 import { readActivity, withActivity, activitiesOf } from './activities.js'
 
@@ -27,6 +28,34 @@ describe('grades', () => {
     expect(gradeRank('font', '7A')).toBeGreaterThan(gradeRank('font', '6C+'))
     expect(gradeRank('circuit', 'Black')).toBe(-1)
     expect(gradeRank('v', 'Comp wall')).toBe(-1)
+  })
+})
+
+describe('VITAL’s colours', () => {
+  it('rank Green to White, each band a span of V grades', () => {
+    expect(VITAL_GRADES).toEqual(['Green', 'Yellow', 'Orange', 'Red', 'Purple', 'Black', 'White'])
+    expect(VITAL_GRADES.map(g => gradeRange('vital', g))).toEqual(['VB', 'V0-1', 'V2-3', 'V4-5', 'V6-7', 'V8-9', 'V10+'])
+    expect(gradeRank('vital', 'White')).toBeGreaterThan(gradeRank('vital', 'Black'))
+    expect(gradeRank('vital', 'Orange')).toBeGreaterThan(gradeRank('vital', 'Yellow'))
+    expect(gradeRank('vital', 'Orange')).toBeLessThan(gradeRank('vital', 'Red'))
+    expect(gradeRange('v', 'V4')).toBeNull()
+    expect(gradeColor('vital', 'Purple')).toBe('#9a76d5')
+    expect(gradeColor('vital', 'Blue')).toBeNull()
+    expect(normalizeGrade('vital', ' purple ')).toBe('Purple')
+  })
+
+  it('name the hardest band sent, and list every band in the picker', () => {
+    const b = climb(newBouldering('VITAL Brooklyn', 'vital'), ['Orange', 'flash'], ['Red', 'fall'], ['Red', 'send'], ['Purple', 'fall'])
+    expect(boulderingSummary(b)).toMatchObject({ scale: 'vital', sends: 2, top: 'Red', topFlash: 'Orange' })
+    expect(sortedTallies(b).map(r => r.grade)).toEqual(['Purple', 'Red', 'Orange'])
+    expect(gradeChoices('vital', []).grades).toEqual(VITAL_GRADES)
+    expect(gradeChoices('vital', []).more).toBe(false)
+  })
+
+  it('are the default for a new session, and Orange from a 1.4.5 session ranks in them', () => {
+    expect(newBouldering().scale).toBe('vital')
+    const old = readBouldering({ gym: 'VITAL Brooklyn', circuits: [{ grade: 'Orange', attempts: 2, sends: 1 }, { grade: 'Yellow', attempts: 1, sends: 1 }] })
+    expect(boulderingSummary(old).top).toBe('Orange')
   })
 })
 
@@ -85,11 +114,11 @@ describe('logging climbs', () => {
 })
 
 describe('reading a session back', () => {
-  it('reads a 1.4.5 session as colour circuits and bounds every number', () => {
+  it('reads a 1.4.5 session as VITAL colours and bounds every number', () => {
     expect(readBouldering({ gym: ' VITAL Brooklyn ', circuits: [
       { grade: 'Green', attempts: 2, sends: 5, flashes: 9 }, { grade: 'green', attempts: 4, sends: 1 },
       { grade: 'Red', attempts: 0, sends: 0 }, { grade: '', attempts: 3 },
-    ] })).toEqual({ gym: 'VITAL Brooklyn', scale: 'circuit', circuits: [{ grade: 'Green', attempts: 5, sends: 5, flashes: 5 }] })
+    ] })).toEqual({ gym: 'VITAL Brooklyn', scale: 'vital', circuits: [{ grade: 'Green', attempts: 5, sends: 5, flashes: 5 }] })
   })
 
   it('keeps the Undo log and the last climb only while live, and only for grades it holds', () => {
@@ -154,8 +183,9 @@ describe('over time', () => {
   it('starts a gym on the scale it was last climbed on, a suggested gym on its own', () => {
     expect(scaleFor(sessions, 'VITAL Brooklyn')).toBe('circuit')
     expect(scaleFor(sessions, 'CRAG HALL')).toBe('v')
-    expect(scaleFor([], 'Anywhere')).toBe('v')
-    expect(startScale([], 'VITAL Upper West Side')).toBe('circuit')
+    expect(scaleFor([], 'Anywhere')).toBe('vital')
+    expect(startScale([], 'VITAL Upper West Side')).toBe('vital')
+    expect(startScale([], '')).toBe('vital')
     expect(startScale(sessions, 'New place')).toBe('v')
   })
 

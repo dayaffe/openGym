@@ -33,7 +33,7 @@ describe('log_bouldering', () => {
     const built = buildBoulderingLog({}, { date: '2026-11-18', grades: [{ grade: 'Green', sends: 1 }] }, { now: NOW })
     expect(built.durationAssumed).toBe(true)
     expect(built.activity.min).toBe(DEFAULT_MIN)
-    expect(built.activity.bouldering.scale).toBe('circuit')
+    expect(built.activity.bouldering.scale).toBe('vital')
     expect(new Date(built.activity.at).getHours()).toBe(18)
   })
 
@@ -51,5 +51,7 @@ describe('log_bouldering', () => {
     expect(scaleOfGrades(['V0', 'vb'])).toBe('v')
     expect(scaleOfGrades(['V3', '6A'])).toBeNull()
     expect(scaleOfGrades([])).toBeNull()
+    expect(scaleOfGrades(['Purple', 'white'])).toBe('vital')
+    expect(scaleOfGrades(['Purple', 'Blue'])).toBe('circuit')
   })
 })

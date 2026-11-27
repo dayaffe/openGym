@@ -380,7 +380,7 @@ consent screen), stored as `S.coach.share`:
 | --- | --- | --- |
 | Strength trends (`records`) | on | estimated 1RMs (Epley, work sets of 1-12 reps) of the ten most trained lifts: best, best of the last 4 weeks, of the 8 before, the trend |
 | Body measurements (`measurements`) | on | per field, the latest value and the one about eight weeks earlier (not blood pressure) |
-| Sport outside the gym (`activities`) | on | runs, rides, matches and bouldering sessions of the last 14 days (at most 20): sport, day, minutes, distance; for bouldering the scale, sends, flashes, goes, the hardest send (V and Font only) and the scale's own grades climbed. Never the gym's name or a grade the gym named itself |
+| Sport outside the gym (`activities`) | on | runs, rides, matches and bouldering sessions of the last 14 days (at most 20): sport, day, minutes, distance; for bouldering the scale, sends, flashes, goes, the hardest send (VITAL's colours, V and Font) and the scale's own grades climbed. Never the gym's name or a grade the gym named itself |
 | Health (`health`) | **off** | daily check-ins of the last 14 days, the phone's vitals summary (sleep, resting heart rate, HRV, steps: latest and usual; sent with the question, never synced) and the latest blood pressure |
 
 Reviews and chat questions read them; a new plan and a debrief do not. Consent version 3 asks

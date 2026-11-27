@@ -18,7 +18,7 @@ const whole = v => (Number.isInteger(v) && v >= 0 ? v : null)
 export function scaleOfGrades(grades) {
   const list = grades.map(g => String(g || '').trim()).filter(Boolean)
   if (!list.length) return null
-  for (const s of ['v', 'font', 'circuit']) {
+  for (const s of ['v', 'font', 'vital', 'circuit']) {
     if (list.every(g => SCALE_GRADES[s].includes(normalizeGrade(s, g)))) return s
   }
   return null
@@ -43,7 +43,7 @@ export function buildBoulderingLog(S, input, { now = Date.now() } = {}) {
   if (rows.length > MAX_GRADES) problems.push({ field: 'grades', problem: `at most ${MAX_GRADES} grades in one session` })
   if (input?.scale != null && !SCALES.includes(input.scale)) problems.push({ field: 'scale', problem: `one of ${SCALES.join(', ')}` })
   const sessions = activitiesOf(S)
-  const scale = input?.scale || scaleOfGrades(rows.map(r => r?.grade)) || scaleFor(sessions, gym, 'v')
+  const scale = input?.scale || scaleOfGrades(rows.map(r => r?.grade)) || scaleFor(sessions, gym)
   const circuits = []
   rows.forEach((r, i) => {
     const where = `grades[${i}]`
