@@ -18,8 +18,8 @@ import { useUI } from '../store/useUI.js'
 // state it took with it is the DOM node itself: focus, the :active tint, any in-flight transition.
 function Tab({ active, icon, label, onClick, dot, tour }) {
   return (
-    <button className={active ? 'on' : ''} onClick={onClick} data-tour={tour}
-      aria-current={active ? 'location' : undefined} aria-label={dot ? label + ', ' + t('Connection problem') : label}>
+    <button className={active ? 'on' : ''} onClick={onClick} data-tour={tour} data-label={label}
+      aria-current={active ? 'location' : undefined} aria-label={dot ? label + ', ' + t('Connection problem') : undefined}>
       <span className="tab-ic"><Icon name={icon} />{dot && <span className="tab-dot" aria-hidden="true" />}</span><span>{label}</span>
     </button>
   )
@@ -41,7 +41,17 @@ export default function TabBar({ onStart, onPick }) {
   const trouble = useConnectionTrouble()
   const blocked = useUI(s => s.sheets.length > 0)
   const visible = !!user || isGuest
-  useLayoutEffect(() => bindTabGlass(bar.current, blocked), [visible, blocked])
+  // On iOS 26 a tab bar standing in a column is drawn natively in Liquid Glass (lib/vertical-bar.js,
+  // VerticalBarPlugin.swift), from these buttons. Bound once; a sheet dims it or moves it aside.
+  const glass = useRef(null)
+  const holdPick = useRef(null)
+  holdPick.current = () => { if (!S.active && onPick) onPick() }
+  useLayoutEffect(() => {
+    const unbind = bindTabGlass(bar.current, { blocked: useUI.getState().sheets.length > 0, onHold: () => holdPick.current?.() })
+    glass.current = unbind
+    return () => { glass.current = null; unbind?.() }
+  }, [visible])
+  useLayoutEffect(() => { glass.current?.update?.({ blocked }) }, [blocked])
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // A screen without a tab of its own lights the tab it is opened from (Muscles from both).
